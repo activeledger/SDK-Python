@@ -23,40 +23,37 @@ def renew_key(filename):
         print(f'No file found, create file {filename}')
 
 
-renew_key('public.pem')
-renew_key('private.pem')
+def read_key(filename):
+  f = open(filename, 'rb')
+  t = f.read()
+  return t
+
+# renew_key('public.pem')
+# renew_key('private.pem')
 
 
-f1 = open('public.pem', 'wb')
-f2 = open('private.pem', 'wb')
-f1.write(rsa_object.publickey().exportKey())
-f2.write(rsa_object.exportKey())
-f1.close
-f2.close
+# f1 = open('public.pem', 'wb')
+# f2 = open('private.pem', 'wb')
+# f1.write(rsa_object.publickey().exportKey())
+# f2.write(rsa_object.exportKey())
+# f1.close
+# f2.close
 
+
+rsa_object = RSA.importKey(read_key('private.pem'))
+# print(rsa_object)
 
 # create signature object with private key
 sig_object = PKCS1_v1_5.new(rsa_object)
 
 # create a hash object based on SHA256
-# hash_object = SHA256.new()
+hash_object = SHA256.new()
 
-message = {
-  "$tx": {
-    "$namespace" : "default",
-    "$contract" : "onboard",
-    "$i" : {
-      "identity" : {
-        "publicKey" : rsa_object.publickey().exportKey().decode(),
-        "type" : "rsa"
-      }
-    }
-  }
-}
+message = 'hello'.encode()
 
 
 
-message = json.dumps(message).encode()
+# # message = json.dumps(message).encode()
 
 digest = SHA256.new()
 digest.update(message)
@@ -65,25 +62,34 @@ sig = sig_object.sign(digest)
 
 sig_string = base64.b64encode(sig).decode()
 
+
+
+print(sig_string)
+
+verifier = PKCS1_v1_5.new(RSA.importKey(read_key('public.pem')))
+verified = verifier.verify(digest, sig)
+
+print(verified)
+
 # print(type(sig_string))
 
 
-onboard_message = {
-  '$tx' : {
-    '$namespace' : 'default',
-    '$contract' : 'onboard',
-    '$i' : {
-      'identity' : {
-        'publicKey' : rsa_object.publickey().exportKey().decode(),
-        'type' : 'rsa'
-      }
-    }
-  },
-  '$selfsign' : True,
-  '$sigs' : {
-    'identity' : sig_string
-  }
-}
+# onboard_message = {
+#   '$tx' : {
+#     '$namespace' : 'default',
+#     '$contract' : 'onboard',
+#     '$i' : {
+#       'identity' : {
+#         'publicKey' : rsa_object.publickey().exportKey().decode(),
+#         'type' : 'rsa'
+#       }
+#     }
+#   },
+#   '$selfsign' : True,
+#   '$sigs' : {
+#     'identity' : sig_string
+#   }
+# }
 
 
 
@@ -105,8 +111,8 @@ onboard_message = {
 
 
 # print(type(onboard_message))
-headers = {'Content-type': 'application/json; charset=utf8'}
-r = requests.post('http://35.195.221.172:5260', data= json.dumps(onboard_message).encode(), headers = headers)
+# headers = {'Content-type': 'application/json; charset=utf8'}
+# r = requests.post('http://35.195.221.172:5260', data= json.dumps(onboard_message).encode(), headers = headers)
 # print(r)
 
 # print(type(json.dumps(onboard_message, indent= 2)))
@@ -114,8 +120,8 @@ r = requests.post('http://35.195.221.172:5260', data= json.dumps(onboard_message
 # headers = {'Content-type': 'application/json; charset=utf8'}
 
 # r = requests.post('http://35.195.221.172:5260', data= json.dumps(onboard_message), headers=headers)
-print(r.status_code)
-print(r._content)
+# print(r.status_code)
+# print(r._content)
 # url = "http://localhost:8080"
 # data = {'sender': 'Alice', 'receiver': 'Bob', 'message': 'We did it!'}
 # r = requests.post(url, data=json.dumps(data), headers=headers)

@@ -53,11 +53,19 @@ def generate(keytype, keysize = 2048):
 
 
 
+def exportKey(key_object):
+      '''
+      This will save key as PEM format without encrytion
+      It will generate two files named public_key.pem and private_key.pem
+      '''
+    
+
+
 # a = generate('rsa', 2048)
 # print(json.dumps(a, indent=2))
 
 b = generate('secp256k1')
-print(json.dumps(b, indent=2))
+# print(json.dumps(b))
 
 # sign_object = ECC.import_key(b.get('prv').get('pkcs8pem').encode())
 # print(sign_object)
@@ -76,15 +84,39 @@ message = {
   }
 }
 
-message = json.dumps(message).encode()
+message = json.dumps(message, separators=(',', ':')).encode()
+print(message)
+
+messaged = {
+"$namespace": "default",
+  "$contract": "onboard",
+  "$i": {
+    "identity": {
+      "publicKey": b.get('pub').get('pkcs8pem'),
+      "type": "secp256k1"
+    }
+  }
+}
+
+message1 = json.dumps(messaged).encode()
+message2 = json.dumps(messaged, indent=2).encode()
+
+print(message1 == message2)
+
 
 
 private_key = serialization.load_pem_private_key(b.get('prv').get('pkcs8pem').encode(), None, default_backend())
 signature = private_key.sign(message, ec.ECDSA(hashes.SHA256()))
 
+
+signature1 = private_key.sign(message1, ec.ECDSA(hashes.SHA256()))
+signature2 = private_key.sign(message2, ec.ECDSA(hashes.SHA256()))
+
+print(signature1 == signature2)
+
 sig_string = base64.b64encode(signature).decode()
 
-print(sig_string)
+# print(sig_string)
 # message = 'apple'.encode()
 # digest = SHA256.new()
 # digest.update(message)

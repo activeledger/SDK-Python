@@ -61,11 +61,10 @@ message = {
 }
 
 
-f3 = open('message.json', 'w')
-f3.write(json.dumps(message, indent=2))
-f3.close
+message = json.dumps(message, separators=(',', ':')).encode()
 
-message = bytes(str("hello"), 'utf-8')
+
+# message = bytes(str("hello"), 'utf-8')
 
 # message = bytes(str(message), 'utf-8')
 
@@ -83,32 +82,13 @@ message = bytes(str("hello"), 'utf-8')
 # print("---------------------")
 
 
-digest1 = SHA256.new()
-digest1.update(message)
-
-digest2 = SHA256.new()
-digest2.update(message)
-
-# digest = SHA256.new()
-# digest.update(message)
-
-sig1 = sig_object.sign(digest1)
-sig_string1 = sig1
 
 
-sig2 = sig_object.sign(digest2)
-sig_string2 = base64.b64encode(sig2).decode()
+digest = SHA256.new()
+digest.update(message)
 
-
-
-print('------------------------------------')
-print(sig_string1)
-print('------------------------------------')
-print(sig_string2)
-print('------------------------------------')
-
-# sig = sig_object.sign(digest)
-# sig_string = base64.b64encode(sig).decode()
+sig = sig_object.sign(digest)
+sig_string = base64.b64encode(sig).decode()
 
 # print(type(sig_string))
 # print(sig_string)
@@ -126,7 +106,7 @@ onboard_message = {
   },
   "$selfsign": True,
   "$sigs": {
-    "identity": sig_string2,
+    "identity": sig_string,
   }
 }
 
@@ -143,10 +123,10 @@ r = requests.post(url, data = json.dumps(onboard_message), headers = headers)
 
 
 print(r)
-print(r._content)
+# print(r._content)
+print(json.dumps(r._content.decode(), indent=2))
 
 
 # a = json.dumps(generate('rsa', 2048), indent= 2)
-
 
 

@@ -52,6 +52,8 @@ def generate(keytype, keysize = 2048):
       }
     }
     return key_object
+  else:
+    raise Exception('keytype unrecognized')
 
 def verify(keytype, pub_key, prv_key):
   '''
@@ -95,3 +97,4 @@ def export(key_object):
   '''
   if (key_object):   
     return key_object
+

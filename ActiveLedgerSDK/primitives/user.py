@@ -1,4 +1,4 @@
-from pythonSDK.primitives import keypairs
+from ActiveLedgerSDK.primitives import keypairs
 import os 
 import json
 import hashlib
@@ -23,6 +23,8 @@ class identity(object):
             self.identity = 'identity'
         if not os.path.exists('./sdk-keypairs/'):
             os.makedirs('./sdk-keypairs/')
+        if not os.path.exists('./sdk-contracts/'):
+            os.makedirs('./sdk-contracts/')
         
     def generate_key(self, keytype, keysize = 2048):
         try:
@@ -81,6 +83,22 @@ class identity(object):
             self.key_type = key_type
         else:
             raise Exception('fail to import key pair')
+    
+    def setHTTP(self, address):
+        '''
+        setHTTP function set the post address for current identity
+        it should in the from like: 'http://testnet-uk.activeledger.io:5260'
+        '''
+        if type(address) is not str:
+            raise Exception('http post address must be a string')
+        else:
+            self.address = address
+
+    def sign(self, message):
+        '''
+        sign function and return a signature in base64 string format
+
+        '''
 
 
 

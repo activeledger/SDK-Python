@@ -10,6 +10,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 
 import hashlib
+import json
+import base64
 
 def generate(keytype, keysize = 2048):
   '''
@@ -89,7 +91,34 @@ def verify(keytype, pub_key, prv_key):
     raise Exception('keytype not supported or not identified')
         
 
-    
+def sign(keytype, prv_key, message):
+  '''
+  sign function return a string from a message signed by private key
+  the message should be in dic format
+  private key is in string format
+  '''
+  if type(message) is not dict:
+    raise Exception('message type error')
+  elif type(prv_key) is not str:
+    raise Exception('private key format invalid')
+  else:
+    try:
+      private_key = serialization.load_pem_private_key(prv_key.encode(), None, default_backend())
+    except:
+      raise Exception('private key not recognized')
+    message = json.dumps(message, separators=(',', ':')).encode()
+    if keytype == 'rsa':
+        signature = private_key.sign(message, padding.PKCS1v15(), hashes.SHA256())
+    elif keytype == 'secp256k1':
+        signature = private_key.sign(message, ec.ECDSA(hashes.SHA256()))
+    else:
+        raise Exception('key type error')
+    try:
+      sig_string = base64.b64encode(signature).decode()
+      return sig_string
+    except:
+      raise Exception('signature failed to generate')
+
 
 def export(key_object):
   '''

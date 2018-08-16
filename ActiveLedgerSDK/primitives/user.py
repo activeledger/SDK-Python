@@ -99,8 +99,13 @@ class identity(object):
     def sign(self, message):
         '''
         sign function and return a signature in base64 string format
-
+        message should be in dic format
         '''
+        try:
+            keypairs.sign(self.key_type, self.key_object.get('prv').get('pkcs8pem'), message)
+        except:
+            raise Exception('Information missing for signing')
+
 
     def setStreamID(self, respond):
         '''

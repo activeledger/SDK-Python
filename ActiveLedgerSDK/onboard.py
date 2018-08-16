@@ -64,7 +64,6 @@ def onboardIdentity(identity_object):
                 identity_object.identity: sig_string
             }
         }
-
         message_header = {'Accept': 'application/json', 'Content-Type': 'application/json'}
         r = requests.post(identity_object.address, data = json.dumps(onboard_message), headers = message_header)
         return json.loads(r.content.decode())

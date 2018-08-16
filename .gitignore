@@ -1,5 +1,5 @@
 # compiled python bytes code folder
-# **/__pycache__/
+/ActiveLedgerSDK/**/__pycache__/
 
 /playground/
 
@@ -7,5 +7,6 @@
 # for testing leave for now
 /sdk-contracts/
 /sdk-keypairs/
+/sdk-identities/
 
 /sourcecode/

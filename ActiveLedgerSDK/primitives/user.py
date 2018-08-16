@@ -25,6 +25,8 @@ class identity(object):
             os.makedirs('./sdk-keypairs/')
         if not os.path.exists('./sdk-contracts/'):
             os.makedirs('./sdk-contracts/')
+        if not os.path.exists('./sdk-identities/'):
+            os.makedirs('./sdk-identities/')
         
     def generate_key(self, keytype, keysize = 2048):
         try:
@@ -99,6 +101,46 @@ class identity(object):
         sign function and return a signature in base64 string format
 
         '''
+
+    def setStreamID(self, respond):
+        '''
+        set stream id after onboarding
+        respond is the respond from activeledger
+        this will also create a json file containing the respond
+        '''
+        if type(respond) is not dict:
+            raise Exception('format unrecognized, please use default respond')
+        else:
+            try:
+                id = respond.get('$streams').get('new')[0].get('id')
+                f = open('./sdk-identities/{}_onboard.json'.format(self.identity), 'w')
+                f.write(json.dumps(respond, indent=2, separators=(',', ':')))
+                f.close
+            except:
+                print('unrecognized information')
+        self.streamID = id
+    
+    def importStreamID(self, filename):
+        '''
+        import stream id for existing
+        **NOTE** this will erase any existing stream id
+        '''
+        try:
+            f = open('./sdk-identities/{}'.format(filename), 'r')
+            stream_content = f.read()
+            f.close
+        except:
+            raise Exception('identity file not exist')
+        try:
+            res = json.loads(stream_content)
+            self.setStreamID(res)
+        except:
+            raise Exception('identity content not recognized')
+
+        
+
+
+    
 
 
 

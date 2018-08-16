@@ -23,6 +23,7 @@ def createIdentity(name):
 def onboardIdentity(identity_object):
     '''
     onboard current identity object
+    if success, return a python dictioinary 
     '''
     if type(identity_object) is not identity:
         raise Exception('input type invalid')

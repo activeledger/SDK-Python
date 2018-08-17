@@ -23,8 +23,8 @@ class identity(object):
             self.identity = 'identity'
         if not os.path.exists('./sdk-keypairs/'):
             os.makedirs('./sdk-keypairs/')
-        if not os.path.exists('./sdk-contracts/'):
-            os.makedirs('./sdk-contracts/')
+        if not os.path.exists('./sdk-transactions/'):
+            os.makedirs('./sdk-transactions/')
         if not os.path.exists('./sdk-identities/'):
             os.makedirs('./sdk-identities/')
         

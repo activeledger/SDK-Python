@@ -9,7 +9,7 @@ user = onboard.createIdentity('Jialin_test2')
 
 user.generate_key('rsa', 2048)
 user.export_key()
-user.setHTTP('http://testnet-usa.activeledger.io:5260')
+user.setHTTP('http://testnet-uk.activeledger.io:5260')
 
 # print(user.key_type)
 

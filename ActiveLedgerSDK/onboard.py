@@ -65,7 +65,10 @@ def onboardIdentity(identity_object):
             }
         }
         message_header = {'Accept': 'application/json', 'Content-Type': 'application/json'}
-        r = requests.post(identity_object.address, data = json.dumps(onboard_message), headers = message_header)
+        try:
+            r = requests.post(identity_object.address, data = json.dumps(onboard_message), headers = message_header, timeout = 10)
+        except:
+            raise Exception('Http post timeout')
         return json.loads(r.content.decode())
     except:
         print('Onboarding identity failed')

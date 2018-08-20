@@ -1,4 +1,4 @@
-from ActiveLedgerSDK.primitives.user import identity
+from activeLedgerSDK.primitives.user import identity
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes

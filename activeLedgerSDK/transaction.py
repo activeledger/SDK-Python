@@ -1,5 +1,5 @@
-from ActiveLedgerSDK.primitives.user import identity
-from ActiveLedgerSDK.primitives.transaction import baseTransaction
+from activeLedgerSDK.primitives.user import identity
+from activeLedgerSDK.primitives.transaction import baseTransaction
 import requests
 import json
 

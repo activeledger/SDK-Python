@@ -1,4 +1,4 @@
-from ActiveLedgerSDK.primitives import keypairs
+from activeLedgerSDK.primitives import keypairs
 import os 
 import json
 import hashlib

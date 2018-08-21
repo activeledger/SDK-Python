@@ -4,7 +4,7 @@ Python sdk for python developers who wish use activeledger.
 
 ## Getting Started
 
-For detailed documentation please visit
+For detailed documentation please visit https://activeledgersdk.readthedocs.io/en/latest/
 
 ### Prerequisites
 

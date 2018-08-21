@@ -16,7 +16,7 @@ Currently only python 3.5+ version is suported
 Simply download the sdk with the following command:
 
 ```
-pip install activeLedgerSDK
+pip install activeLedger-sdk
 ```
 
 ## Running the tests
@@ -45,7 +45,7 @@ Add additional notes about how to deploy this on a live system
 
 ## Built With
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
+* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - Used for key generation
 * [Maven](https://maven.apache.org/) - Dependency Management
 * [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
 

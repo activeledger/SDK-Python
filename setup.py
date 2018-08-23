@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="activeLedger-sdk",
-    version="0.0.0",
+    version="0.0.1",
     author="Jialin",
     author_email="jyu@agilitysciences.com",
     description="Python SDK for activeledger",

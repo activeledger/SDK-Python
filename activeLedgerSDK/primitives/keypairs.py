@@ -33,6 +33,21 @@ def generate(keytype, keysize = 2048):
         'hash': hashlib.sha256(private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())).hexdigest()
       }
     }
+
+    # add support for python 2.7 unicode 
+    if type(key_object.get('pub').get('pkcs8pem')) or type(key_object.get('prv').get('pkcs8pem')) is unicode:
+      
+      key_object = {
+        'pub': {
+          'pkcs8pem': public_key.public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo),
+          'hash': hashlib.sha256(public_key.public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)).hexdigest()
+        },
+        'prv': {
+          'pkcs8pem': private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()),
+          'hash': hashlib.sha256(private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())).hexdigest()
+        }
+      }
+          
     return key_object
 
   if keytype == 'secp256k1':
@@ -53,6 +68,21 @@ def generate(keytype, keysize = 2048):
         'hash': hashlib.sha256(private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())).hexdigest()
       }
     }
+
+    # add support for python 2.7 unicode 
+    if type(key_object.get('pub').get('pkcs8pem')) or type(key_object.get('prv').get('pkcs8pem')) is unicode:
+      
+      key_object = {
+        'pub': {
+          'pkcs8pem': public_key.public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo),
+          'hash': hashlib.sha256(public_key.public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)).hexdigest()
+        },
+        'prv': {
+          'pkcs8pem': private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()),
+          'hash': hashlib.sha256(private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())).hexdigest()
+        }
+      }
+
     return key_object
   else:
     raise Exception('keytype unrecognized')

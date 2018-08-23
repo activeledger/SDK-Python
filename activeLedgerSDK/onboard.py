@@ -9,6 +9,7 @@ from cryptography.hazmat.backends import default_backend
 import requests
 import json
 import base64
+import ast
 
 def createIdentity(name):
     '''
@@ -55,15 +56,27 @@ def onboardIdentity(identity_object):
     else:
         raise Exception('key type error')
     try:
-        sig_string = base64.b64encode(signature).decode()
+        # add for python 2.7 support
+        if type(message) is str:
+            sig_string = base64.b64encode(signature)
 
-        onboard_message = {
-            "$tx": json.loads(message.decode()),
-            "$selfsign": True,
-            "$sigs": {
-                identity_object.identity: sig_string
+            onboard_message = {
+                "$tx": ast.literal_eval(json.dumps(json.loads(message), separators=(',', ':'))),
+                "$selfsign": True,
+                "$sigs": {
+                    identity_object.identity: sig_string
+                }
             }
-        }
+        else:
+            sig_string = base64.b64encode(signature).decode()
+            onboard_message = {
+                "$tx": json.loads(message.decode()),
+                "$selfsign": True,
+                "$sigs": {
+                    identity_object.identity: sig_string
+                }
+            }
+
         message_header = {'Accept': 'application/json', 'Content-Type': 'application/json'}
         try:
             r = requests.post(identity_object.address, data = json.dumps(onboard_message), headers = message_header, timeout = 10)

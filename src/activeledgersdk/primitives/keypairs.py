@@ -21,9 +21,8 @@ def generate(keytype, keysize = 2048):
   '''
   Generate the same fromat of key object as it is in activeledger
   '''
-
   if keysize <= 1024:
-    raise ValueError('key size 1024 and below not supported for security reason')
+    raise ValueError('key size must larger than 1024')
 
   if keytype == 'rsa':        
     private_key = rsa.generate_private_key(65537, keysize, default_backend())
@@ -121,4 +120,5 @@ def sign(keytype, key_object, message):
     raise ValueError('keytype unrecognized')
   
   raise TypeError('type dont recognize')
+
 

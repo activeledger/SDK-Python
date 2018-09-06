@@ -152,9 +152,7 @@ class SendTransactions(unittest.TestCase):
                     }
                 }
 
-                print(json.dumps(tran_message))
-
-                
+                # print(json.dumps(tran_message, separators=(',', ':')))             
             else:
                 sig_string = base64.b64encode(signature).decode()
 
@@ -166,20 +164,20 @@ class SendTransactions(unittest.TestCase):
                     }
                 }
 
-                print(json.dumps(tran_message))
+                # print(json.dumps(tran_message, separators=(',', ':')))/
             
             
             message_header = {'Accept': 'application/json', 'Content-Type': 'application/json'}
 
             try:
-                r = requests.post('http://testnet-uk.activeledger.io:5260', data = json.dumps(tran_message, separators=(',', ':')), headers = message_header, timeout = 10)
+                r = requests.post('http://testnet-uk.activeledger.io:5260', data = json.dumps(tran_message), headers = message_header, timeout = 10)
             except:
                 raise Exception('Http post timeout')
 
             respond = json.loads(r.content.decode())
             total = respond.get('$summary').get('total')
             commit = respond.get('$summary').get('commit')
-            # print(respond)
+            print(respond)
             self.assertTrue(total == commit)
 
 

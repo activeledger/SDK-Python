@@ -5,7 +5,7 @@ import hashlib
 
 class User(object):
     '''
-    basic object class for identity management
+    user object class for onboarding and 
     one identiy only allows to one type of keys 
     to use multiple keys please create multiple identity
     '''

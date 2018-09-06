@@ -1,4 +1,4 @@
-from activeledgersdk.primary.primitives import keypairs
+from activeledgersdk.primitives import keypairs
 import hashlib
 
 class Key(object):

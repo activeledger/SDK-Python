@@ -1,9 +1,9 @@
-from activeLedgerSDK.primitives import keypairs
+from activeledgersdk.primary.classes import key
 import os 
 import json
 import hashlib
 
-class identity(object):
+class User(object):
     '''
     basic object class for identity management
     one identiy only allows to one type of keys 

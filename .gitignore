@@ -1,7 +1,11 @@
 # compiled python bytes code folder
 /ActiveLedgerSDK/**/__pycache__/
 
-/src/activeledgersdk/**/__pycache__/
+# /src/activeledgersdk/*.__pycache__
+/src/activeledgersdk/**/*.pyc
+
+
+# **/__pycache__/
 
 /playground/
 

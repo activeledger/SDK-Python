@@ -1,11 +1,11 @@
-# compiled python bytes code folder
+# compiled python bytes code folder for 3.x version
 /ActiveLedgerSDK/**/__pycache__/
-
-# /src/activeledgersdk/*.__pycache__
+# compiled python bytes code folder for 2.x version
 /src/activeledgersdk/**/*.pyc
 
 
-# **/__pycache__/
+# test module file
+/tests/test.py
 
 /playground/
 

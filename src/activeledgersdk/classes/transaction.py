@@ -1,7 +1,3 @@
-import json
-
-
-
 class baseTransaction(object):
 
     def __init__(self):
@@ -57,44 +53,12 @@ class baseTransaction(object):
         else:
             self.transaction.get('$tx')['$r'] = r
     
-    def import_transaction(self, filename):
+    def import_transaction(self, transaction_object):
         '''
-        import transaction from file 
-        the default path is in sdk-contracts folder
-        user need to provide a full transaction file
+        import transaction object directly, user should build 
+        the object according to activeldger documentation 
         '''
-        try:
-            f = open('./sdk-transactions/{}'.format(filename), 'r')
-            transaction_object = f.read()
-            f.close
-        except:
-            raise Exception('file don not exist')
-        transaction_json = json.loads(transaction_object)
-        if '$tx' and '$selfsign' and '$sigs' not in transaction_json:
-            raise Exception('transaction not recognized')
+        if transaction_object is not dict:
+            raise Exception('transaction object must be a dictionary')
         else:
-            try:
-                if '$namespace' in transaction_json.get('$tx'):
-                    self.transaction.get('$tx')['$namespace'] = transaction_json.get('$tx').get('$namespace')
-                if '$contract' in transaction_json.get('$tx'):
-                    self.transaction.get('$tx')['$contract'] = transaction_json.get('$tx').get('$contract')
-                if '$entry' in transaction_json.get('$tx'):
-                    self.transaction.get('$tx')['$entry'] = transaction_json.get('$tx').get('$entry')
-                if '$i' in transaction_json.get('$tx'):
-                    self.transaction.get('$tx')['$i'] = transaction_json.get('$tx').get('$i')
-                if '$o' in transaction_json.get('$tx'):
-                    self.transaction.get('$tx')['$o'] = transaction_json.get('$tx').get('$o')
-                if '$r' in transaction_json.get('$tx'):
-                    self.transaction.get('$tx')['$r'] = transaction_json.get('$tx').get('$r')
-                self.transaction['$selfsign'] = transaction_json.get('$selfsign')
-                self.transaction['$sigs'] = transaction_json.get('$sigs')
-            except:
-                raise Exception('transaction information incomplete')
-
-
-
-
-        
-    
-
-
+            self.transaction = transaction_object

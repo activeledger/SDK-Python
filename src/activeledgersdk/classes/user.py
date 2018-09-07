@@ -1,147 +1,100 @@
-from activeledgersdk.primary.classes import key
-import os 
+from activeledgersdk.classes import key
+from activeledgersdk.classes import transaction 
 import json
-import hashlib
 
 class User(object):
     '''
-    user object class for onboarding and 
-    one identiy only allows to one type of keys 
-    to use multiple keys please create multiple identity
+    user object class for activeledger functions;
+    including onboarding and send transactions.
     '''
 
-    def __init__(self, identity):
+    def __init__(self):
         '''
-        expected a string format
-        if a non-string is given the default object identity is 'identity'
-        create folder to create keypairs when initialize object
-        if exit folder donot do anything
+        initialization of user object
         '''
-        if type(identity) is str:
-            self.identity = identity
+        self.key = None
+
+    def add_key(self, key_class):
+        '''
+        add key object to this user class
+        key_class expect key object type
+        '''
+        if self.key is None and type(key_class) is key.Key:
+            self.key = key_class
         else:
-            self.identity = 'identity'
-        if not os.path.exists('./sdk-keypairs/'):
-            os.makedirs('./sdk-keypairs/')
-        if not os.path.exists('./sdk-transactions/'):
-            os.makedirs('./sdk-transactions/')
-        if not os.path.exists('./sdk-identities/'):
-            os.makedirs('./sdk-identities/')
-        
-    def generate_key(self, keytype, keysize = 2048):
-        try:
-            self.key_object = keypairs.generate(keytype, keysize)
-            self.key_type = keytype       
-        except:
-            print('keytype not supported')
+            if self.key is not None:
+                print('{0} key already exist'.format(self.key.key_type))
+            return None
     
-    def export_key(self):
+    def remove_key(self):
         '''
-        export_key function automatically create three files
-        one JSON file and two PEM files
+        remove key if exist
         '''
-        try:
-            keypairs.export(self.key_object)
-            f1 = open('./sdk-keypairs/{}_public.pem'.format(self.identity), 'w')
-            f2 = open('./sdk-keypairs/{}_private.pem'.format(self.identity), 'w')
-            f3 = open('./sdk-keypairs/{}_key.json'.format(self.identity), 'w')
-            f1.write(self.key_object.get('pub').get('pkcs8pem'))
-            f2.write(self.key_object.get('prv').get('pkcs8pem'))
-            f3.write(json.dumps(self.key_object, indent=2, separators=(',', ':')))
-            f1, f2, f3.close
-        except:
-            print('Key information does not exist,please either generate a new or import your own key')
+        if self.key:
+            self.key = None
+        else:
+            print('key is empty')
     
-    def import_key(self, key_type, pub_key, prv_key):
+    def onboard_key(self, identity, address):
         '''
-        **NOTE: this is erase existing keypairs in the identity class**
-        
-        import_key function only accept files with pkcs8pem format
-        the user should put their own keys in the 'sdk-keypairs' folder at their working directory
-        pub_key, prv_key are file names for public key and private key in .pem format
+        onboard key to get stream id,
+        identity help to identify the user for this onboarding and expect a string
+        address is the http address and expect a string
+        return None if fail and id as a string is succeed
         '''
-        try:
-            f1 = open('./sdk-keypairs/{}'.format(pub_key), 'r')
-            f2 = open('./sdk-keypairs/{}'.format(prv_key), 'r')
-            pub_key = f1.read()
-            prv_key = f2.read()
-            f1, f2.close
-        except:
-            raise Exception('key pair file(s) not exist')
+        if type(address) is not str or type(identity) is not str:
+            raise Exception('address and identity must be string')
         
-        key_OK = keypairs.verify(key_type, pub_key, prv_key)
-        if key_OK:
-            key_object = {               
-                'pub': {
-                'pkcs8pem': pub_key,
-                'hash': hashlib.sha256(pub_key.encode()).hexdigest()
-                },
-                'prv': {
-                'pkcs8pem': prv_key,
-                'hash': hashlib.sha256(prv_key.encode()).hexdigest()
+        if self.key is None:
+            print('key is empty')
+            return None
+        else:
+            message = {
+                '$namespace': 'default',
+                '$contract': 'onboard',
+                '$i': {
+                    identity: {
+                        'publicKey': self.key.key_object.get('pub').get('pkcs8pem'),
+                        'type': self.key.key_type
+                    }
                 }
             }
-            self.key_object = key_object
-            self.key_type = key_type
-        else:
-            raise Exception('fail to import key pair')
-    
-    def setHTTP(self, address):
-        '''
-        setHTTP function set the post address for current identity
-        it should in the from like: 'http://testnet-uk.activeledger.io:5260'
-        '''
-        if type(address) is not str:
-            raise Exception('http post address must be a string')
-        else:
-            self.address = address
-
-    def sign(self, message):
-        '''
-        sign function and return a signature in base64 string format
-        message should be in dic format
-        '''
-        try:
-            keypairs.sign(self.key_type, self.key_object.get('prv').get('pkcs8pem'), message)
-        except:
-            raise Exception('Information missing for signing')
-
-
-    def setStreamID(self, respond):
-        '''
-        set stream id after onboarding
-        respond is the respond from activeledger
-        this will also create a json file containing the respond
-        '''
-        if type(respond) is not dict:
-            raise Exception('format unrecognized, please use default respond')
-        else:
+            sig_string = self.key.create_signature(message)
+            onboard_message = {
+                "$tx": json.loads(message.decode()),
+                "$selfsign": True,
+                "$sigs": {
+                    identity: sig_string
+                }
+            }
+            message_header = {'Accept': 'application/json', 'Content-Type': 'application/json'}
             try:
-                id = respond.get('$streams').get('new')[0].get('id')
-                f = open('./sdk-identities/{}_onboard.json'.format(self.identity), 'w')
-                f.write(json.dumps(respond, indent=2, separators=(',', ':')))
-                f.close
+                r = requests.post(identity_object.address, data = json.dumps(onboard_message), headers = message_header, timeout = 10)
             except:
-                print('unrecognized information')
-        self.streamID = id
-    
-    def importStreamID(self, filename):
-        '''
-        import stream id for existing
-        **NOTE** this will erase any existing stream id
-        '''
-        try:
-            f = open('./sdk-identities/{}'.format(filename), 'r')
-            stream_content = f.read()
-            f.close
-        except:
-            raise Exception('identity file not exist')
-        try:
-            res = json.loads(stream_content)
-            self.setStreamID(res)
-        except:
-            raise Exception('identity content not recognized')
+                raise Exception('Http post timeout')
+            res =json.loads(r.content.decode())
+            id = res.get('$streams').get('new')[0].get('id')
+        if id:
+            print('onboarding succeed')
+            return id
+        else:
+            print('onboarding fail')
+            return None
 
+    def issue_transaction(self, transaction_object):
+        '''
+        issue transaction for activeledger
+        '''
+        if transaction_object is not transaction.baseTransaction:
+            raise TypeError('transaction object invalid')
+        
+        transaction_message = transaction_object.transaction
+        message_header = {'Accept': 'application/json', 'Content-Type': 'application/json'}
+        try:
+            r = requests.post(identity_object.address, data = json.dumps(transaction_message), headers = message_header, timeout = 10)
+        except:
+            raise Exception('Http post timeout')
+        return json.loads(r.content.decode())
         
 
 

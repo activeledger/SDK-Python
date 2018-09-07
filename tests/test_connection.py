@@ -1,15 +1,11 @@
-from activeLedgerSDK.primitives import keypairs
+import sys 
+sys.path.append('/home/jialin/Documents/python-sdk/src/')
+
+from activeledgersdk.classes import key
 import unittest
-import json
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.asymmetric import ec
 import requests
 import json
-import base64
-import ast
+
 
 
 class OnboardingKeyTypes(unittest.TestCase):
@@ -20,47 +16,27 @@ class OnboardingKeyTypes(unittest.TestCase):
         test case for onboarding for different key types    
         '''
         for ktype in (self.key_types):
-            key_object = keypairs.generate(ktype)
-            
+            key_object = key.Key(ktype)
+            key_object.generate_key()
+
             message = {
             '$namespace': 'default',
             '$contract': 'onboard',
             '$i': {
                 'test': {
-                    'publicKey': key_object.get('pub').get('pkcs8pem'),
+                    'publicKey': key_object.key_object.get('pub').get('pkcs8pem'),
                     'type': ktype
                     }
                 }
             }
-
-            message = json.dumps(message, separators=(',', ':')).encode()
-            private_key = serialization.load_pem_private_key(key_object.get('prv').get('pkcs8pem').encode(), None, default_backend()) 
-
-            if ktype == 'rsa':
-                signature = private_key.sign(message, padding.PKCS1v15(), hashes.SHA256())
-            elif ktype == 'secp256k1':
-                signature = private_key.sign(message, ec.ECDSA(hashes.SHA256()))
-            
-            if type(message) is str:
-                sig_string = base64.b64encode(signature)
-
-                onboard_message = {
-                    "$tx": ast.literal_eval(json.dumps(json.loads(message), separators=(',', ':'))),
-                    "$selfsign": True,
-                    "$sigs": {
-                        'test': sig_string
-                    }
+            sig_string = key_object.create_signature(message)
+            onboard_message = {
+                "$tx": message,
+                "$selfsign": True,
+                "$sigs": {
+                    'test': sig_string
                 }
-            else:
-                sig_string = base64.b64encode(signature).decode()
-                onboard_message = {
-                    "$tx": json.loads(message.decode()),
-                    "$selfsign": True,
-                    "$sigs": {
-                        'test': sig_string
-                    }
-                }
-
+            }
             message_header = {'Accept': 'application/json', 'Content-Type': 'application/json'}
 
             try:

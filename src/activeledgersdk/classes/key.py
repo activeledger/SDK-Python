@@ -62,7 +62,8 @@ class Key(object):
         '''
         if self.key_object is None:
             raise ValueError('{0} key not exist'.format(self.key_type))
-        if message is dict:
-            return keypairs.sign(self.key_type, self.key_object, message)
+        return keypairs.sign(self.key_type, self.key_object, message)
+        
+
     
     

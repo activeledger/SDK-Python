@@ -1,6 +1,7 @@
 from activeledgersdk.classes import key
 from activeledgersdk.classes import transaction 
 import json
+import requests
 
 class User(object):
     '''
@@ -61,7 +62,7 @@ class User(object):
             }
             sig_string = self.key.create_signature(message)
             onboard_message = {
-                "$tx": json.loads(message.decode()),
+                "$tx": message,
                 "$selfsign": True,
                 "$sigs": {
                     identity: sig_string
@@ -69,7 +70,7 @@ class User(object):
             }
             message_header = {'Accept': 'application/json', 'Content-Type': 'application/json'}
             try:
-                r = requests.post(identity_object.address, data = json.dumps(onboard_message), headers = message_header, timeout = 10)
+                r = requests.post(address, data = json.dumps(onboard_message), headers = message_header, timeout = 10)
             except:
                 raise Exception('Http post timeout')
             res =json.loads(r.content.decode())

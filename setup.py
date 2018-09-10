@@ -16,9 +16,20 @@ from setuptools import find_packages, setup
 from setuptools.command.install import install
 from setuptools.command.test import test
 
+
+# When executing the setup.py, we need to be able to import ourselves, this
+# means that we need to add the src/ directory to the sys.path.
+base_dir = os.path.dirname(__file__)
+src_dir = os.path.join(base_dir, "src")
+sys.path.insert(0, src_dir)
+
+about = {}
+with open(os.path.join(src_dir, "activeledgersdk", "__about__.py")) as f:
+    exec(f.read(), about)
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
-
+    
 setup(
     name=about["__title__"],
     version=about["__version__"],
@@ -37,50 +48,5 @@ setup(
 )
 
 
-base_dir = os.path.dirname(__file__)
-src_dir = os.path.join(base_dir, "src")
-
-# When executing the setup.py, we need to be able to import ourselves, this
-# means that we need to add the src/ directory to the sys.path.
-sys.path.insert(0, src_dir)
-
-about = {}
-with open(os.path.join(src_dir, "cryptography", "__about__.py")) as f:
-    exec(f.read(), about)
-
-
-
-
-
-class PyTest(test):
-    def finalize_options(self):
-        test.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-        # This means there's a vectors/ folder with the package in here.
-        # cd into it, install the vectors package and then refresh sys.path
-        if VECTORS_DEPENDENCY not in test_requirements:
-            subprocess.check_call(
-                [sys.executable, "setup.py", "install"], cwd="vectors"
-            )
-            pkg_resources.get_distribution("cryptography_vectors").activate()
-
-    def run_tests(self):
-        # Import here because in module scope the eggs are not loaded.
-        import pytest
-        test_args = [os.path.join(base_dir, "tests")]
-        errno = pytest.main(test_args)
-        sys.exit(errno)
-
-
-
-
-
-
-
-
-with open(os.path.join(base_dir, "README.rst")) as f:
-    long_description = f.read()
 
 

@@ -26,6 +26,7 @@ Add additional notes about how to deploy this on a live system
 ## Built With
 
 * [cryptography](https://github.com/pyca/cryptography) - Used for key generation
+* [requests](https://github.com/requests/requests) - Used for http requests
 
 ## License
 

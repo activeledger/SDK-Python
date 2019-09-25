@@ -2,6 +2,8 @@ from activeledgersdk.classes import key
 from activeledgersdk.classes import transaction 
 import json
 import requests
+from activeledgersdk.classes import Connection as con
+import ast
 
 class User(object):
     '''
@@ -14,6 +16,9 @@ class User(object):
         initialization of user object
         '''
         self.key = None
+        self.keyName=None
+        self.stream=None
+        self.type=None
 
     def add_key(self, key_class):
         '''
@@ -77,10 +82,13 @@ class User(object):
             id = res.get('$streams').get('new')[0].get('id')
         if id:
             print('onboarding succeed')
+            self.stream=id
+            self.type=self.key.key_type
+            self.keyName=identity
             return id
         else:
-            print('onboarding fail')
-            return None
+            raise Exception('onboarding fail')
+            
 
     def issue_transaction(self, transaction_object):
         '''
@@ -92,14 +100,9 @@ class User(object):
         transaction_message = transaction_object.transaction
         message_header = {'Accept': 'application/json', 'Content-Type': 'application/json'}
         try:
-            r = requests.post(identity_object.address, data = json.dumps(transaction_message), headers = message_header, timeout = 10)
+            r = requests.post(con.Connection.getConnectionURL, data = json.dumps(transaction_message), headers = message_header, timeout = 10)
         except:
             raise Exception('Http post timeout')
         return json.loads(r.content.decode())
-        
-
-
-    
-
 
 

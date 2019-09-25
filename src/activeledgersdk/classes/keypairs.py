@@ -99,9 +99,10 @@ def sign(keytype, key_object, message):
   the message should be in dic format
   private key is derived from key object which is in dic format
   '''
-  if type(message) is dict and type(key_object) is dict:
+  if type(message) is dict:
     try:
       prv_key = key_object.get('prv').get('pkcs8pem')
+      print("Priv key",prv_key)
       private_key = serialization.load_pem_private_key(prv_key.encode(), None, default_backend())
       message = json.dumps(message, separators=(',', ':')).encode()
     except:

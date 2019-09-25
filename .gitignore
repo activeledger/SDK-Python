@@ -5,7 +5,7 @@
 
 
 # test module file
-/tests/test.py
+/tests/*
 
 /playground/
 

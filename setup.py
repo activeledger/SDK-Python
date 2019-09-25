@@ -37,7 +37,7 @@ setup(
     description=about["__summary__"],
     long_description=long_description,
     license=about["__license__"],
-    url=about["__uri__"],
+    url="http://www.activeledger.io",
 
     author=about["__author__"],
     author_email=about["__email__"],

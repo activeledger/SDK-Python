@@ -5,15 +5,14 @@
 from __future__ import absolute_import, division, print_function
 
 __all__ = [
-    "__title__", "__summary__", "__uri__", "__version__", "__author__",
+    "__title__", "__summary__","__version__", "__author__",
     "__email__", "__license__", "__copyright__",
 ]
 
 __title__ = "activeledgersdk"
 __summary__ = ("activeledgersdk is a package to use full functions of activeledger for Python developers")
-__uri__ = "https://github.com/jialin-yu/activeLedgerSDK"
-
-__version__ = "1.0.dev1"
+download_url = 'https://github.com/activeledger/SDK-Python/archive/v1.0.tar.gz'
+__version__ = "1.0"
 
 __author__ = "activeledger"
 __email__ = "infor@activeledger.io"

@@ -24,7 +24,7 @@ src_dir = os.path.join(base_dir, "src")
 sys.path.insert(0, src_dir)
 
 about = {}
-with open(os.path.join(src_dir, "activeledgersdk", "__about__.py")) as f:
+with open(os.path.join(src_dir, "activeledgerPythonSDK", "__about__.py")) as f:
     exec(f.read(), about)
 
 with open("README.md", "r") as fh:

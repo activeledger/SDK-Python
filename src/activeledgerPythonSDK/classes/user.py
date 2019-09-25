@@ -1,8 +1,8 @@
-from activeledgersdk.classes import key
-from activeledgersdk.classes import transaction 
+from activeledgerPythonSDK.classes import key
+from activeledgerPythonSDK.classes import transaction 
 import json
 import requests
-from activeledgersdk.classes import Connection as con
+from activeledgerPythonSDK.classes import Connection as con
 import ast
 
 class User(object):

@@ -1,8 +1,8 @@
 import json
 import requests
-from activeledgersdk.classes import key
-from activeledgersdk.classes import Connection
-from activeledgersdk.classes import resp
+from activeledgerPythonSDK.classes import key
+from activeledgerPythonSDK.classes import Connection
+from activeledgerPythonSDK.classes import resp
 
 
 class baseTransaction(object):

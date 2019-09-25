@@ -1,6 +1,6 @@
 import json
 import requests
-from activeledgersdk.classes import Connection as con
+from activeledgerPythonSDK.classes import Connection as con
 
 class Node(object):
  

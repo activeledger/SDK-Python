@@ -38,7 +38,7 @@ setup(
     long_description=long_description,
     license=about["__license__"],
     url="http://www.activeledger.io",
-    download_url = 'https://github.com/activeledger/SDK-Python/archive/v1.0.tar.gz'
+    download_url = 'https://github.com/activeledger/SDK-Python/archive/v1.0.tar.gz',
 
     author=about["__author__"],
     author_email=about["__email__"],

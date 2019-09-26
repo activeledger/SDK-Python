@@ -15,7 +15,7 @@ Welcome to Python SDK for Activeledger. This SDK facilitates the user in sending
 - Simply download the sdk with the following command:
 
 ```
-pip install activeLedger-sdk
+pip install activeledgerPythonSDK
 ```
 
 ## Usage

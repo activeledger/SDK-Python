@@ -15,7 +15,7 @@ Welcome to Python SDK for Activeledger. This SDK facilitates the user in sending
 - Simply download the sdk with the following command:
 
 ```
-pip install activeledgerPythonSDK
+pip install activeLedger-sdk
 ```
 
 ## Usage
@@ -87,10 +87,30 @@ tx.createAndSendTransaction(conn,selfsign,Territoriality,streamID,keyObject,keyN
 
 ```
 
-## Built With
+## Events Subscription
 
-* [cryptography](https://github.com/pyca/cryptography) - Used for key generation
-* [requests](https://github.com/requests/requests) - Used for http requests
+SDK contains different helper functions in Events Package for the purpose of subscribing to different events.
+
+- subscribe(host,port)host=http://ip:port
+- subscribeStream(host,port,stream)
+- contractEventSubscribe(host,port,contract,event)
+- contractSubscribe(host,port,contract)
+- eventsubscribe(host,port)
+
+They all return events which can then be used by developers.
+
+## ActivityStreams
+
+SDK also contains helper functions in ActivityStreams package to get and search streams from Activeledger.
+- getActivityStreams(host,ids) //multiple streams.host=http://ip:port
+- getActivityStream(host, id) //single stream
+- getActivityStreamVolatile(host, id)
+- setActivityStreamVolatile(host,id,body) // Anything in the bdy will be written to that location for that stream id.
+- getActivityStreamChanges(host)
+- searchActivityStreamPost(host,query)//post request
+- searchActivityStreamGet(host,query)//get Request
+- findTransaction(host,umid)
+
 
 ## License
 

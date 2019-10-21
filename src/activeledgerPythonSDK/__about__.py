@@ -12,7 +12,7 @@ __all__ = [
 __title__ = "activeledgerPythonSDK"
 __summary__ = ("activeledgersdk is a package to use full functions of activeledger for Python developers")
 
-__version__ = "v1.1"
+__version__ = "v2.0.0"
 
 __author__ = "activeledger"
 __email__ = "infor@activeledger.io"

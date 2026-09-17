@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  core:
+    # The core must work with NO compiled dependency. Run it separately from
+    # the pq job, because everything passes in an environment where the extra
+    # happens to be installed - which is how a zero-dependency promise rots.
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e '.[dev]'
+      - run: pytest tests/ --ignore=tests/test_pq_conformance.py --ignore=tests/integration -q
+
+  post-quantum:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # liboqs-python builds liboqs from source on first import and needs all
+      # of these. libssl-dev especially: without it CMake fails and the only
+      # symptom is "No oqs shared libraries found".
+      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libssl-dev
+      - run: pip install -e '.[pq,dev]'
+      - run: pytest tests/ --ignore=tests/integration -q

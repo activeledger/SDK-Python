@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "activeledger-sdk"
+version = "1.0.0"
+description = "Python SDK for Activeledger, with post-quantum identity support"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Activeledger" }]
+keywords = ["activeledger", "blockchain", "ledger", "post-quantum", "ml-dsa", "falcon"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Security :: Cryptography",
+]
+
+# Deliberately empty. The core is stdlib-only so that `pip install
+# activeledger-sdk` cannot fail on a missing C toolchain - see [pq] below.
+dependencies = []
+
+[project.optional-dependencies]
+# liboqs-python does NOT bundle liboqs. On first import it builds it from
+# source, needing git, CMake, a C compiler AND OpenSSL headers. Making that
+# mandatory would break pip install for anyone without all four - which for a
+# client SDK is close to unusable, and which we hit ourselves on a machine
+# that already had gcc, cmake and ninja. Post-quantum is therefore opt-in.
+pq = ["liboqs-python>=0.16.0"]
+dev = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/activeledger/SDK-Python"
+Ledger = "https://github.com/activeledger/activeledger"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -210,6 +210,22 @@ def test_unknown_key_type_is_rejected():
         KeyType.from_wire("ML-DSA-65")
 
 
+def test_none_is_reported_as_none_not_as_bad_hex():
+    """A key arriving as None is a likelier mistake than a malformed one, and
+    it used to fall through to a raw AttributeError while every other error on
+    this path explained itself."""
+    key = Secp256k1KeyPair.generate()
+
+    for args in [(None,), (key.public_key, None), (None, key.private_key)]:
+        call = (
+            Secp256k1KeyPair.from_public_key
+            if len(args) == 1
+            else Secp256k1KeyPair.from_keys
+        )
+        with pytest.raises(TypeError, match="must be a string"):
+            call(*args)
+
+
 def test_key_type_is_secp256k1():
     assert Secp256k1KeyPair.generate().key_type is KeyType.SECP256K1
 

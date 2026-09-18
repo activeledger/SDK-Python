@@ -176,6 +176,12 @@ class KeyPair:
 
 
 def _decode(value: str, what: str) -> bytes:
+    # Checked explicitly so None reports what it is rather than being blamed
+    # on base64. A key arriving as None from a config file or a database
+    # column is a likelier mistake than a malformed one.
+    if not isinstance(value, str):
+        raise TypeError(f"{what} key must be a string, got {type(value).__name__}")
+
     try:
         return base64.b64decode(value, validate=True)
     except Exception as exc:

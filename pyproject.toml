@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "activeledger-sdk"
-version = "1.0.0"
+version = "1.1.0"
 description = "Python SDK for Activeledger, with post-quantum identity support"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -28,6 +28,12 @@ dependencies = []
 # client SDK is close to unusable, and which we hit ourselves on a machine
 # that already had gcc, cmake and ninja. Post-quantum is therefore opt-in.
 pq = ["liboqs-python>=0.16.0"]
+
+# secp256k1. python-ecdsa is pure Python with no build step, unlike coincurve
+# (libsecp256k1) which needs a C toolchain - and which rejects the high-S
+# signatures the ledger produces freely, so it would fail on roughly half of
+# them.
+ec = ["ecdsa>=0.19"]
 dev = ["pytest>=7.0"]
 
 [project.urls]

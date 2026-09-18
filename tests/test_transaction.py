@@ -21,7 +21,7 @@ class StubSigner:
         return self._key_type
 
     @property
-    def public_key_b64(self):
+    def public_key(self):
         return self._public
 
     def sign(self, message: bytes) -> bytes:

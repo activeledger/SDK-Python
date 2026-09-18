@@ -39,6 +39,74 @@ print(identity.stream_id)
 
 ---
 
+## Key types
+
+| Key type | Wire string | Public | Private | Signature | Encoding | Extra |
+|---|---|---|---|---|---|---|
+| ML-DSA-65 | `ml-dsa-65` | 1952 | 4032 | 3309 | base64 | `[pq]` |
+| Falcon-512 | `falcon-512` | 897 | 1281 | 649-662, variable | base64 | `[pq]` |
+| secp256k1 | `secp256k1` | 33 or 65 | 32 | ~70-72, variable | `0x` hex | `[ec]` |
+
+Use **secp256k1** unless the identity must outlive a cryptographically
+relevant quantum computer: roughly **22x smaller** per transaction, and every
+byte is stored on the ledger permanently and replicated to every node. It also
+works with hardware wallets and HSMs, and is the only way to sign for an
+identity created before post-quantum support.
+
+```bash
+pip install activeledger-sdk[ec]
+```
+
+It installs `python-ecdsa`, which is pure Python with no build step — unlike
+`coincurve` (libsecp256k1), which needs a C toolchain **and** rejects the
+high-S signatures the ledger produces freely.
+
+```python
+from activeledger import Secp256k1KeyPair
+
+key = Secp256k1KeyPair.generate()                    # compressed
+full = Secp256k1KeyPair.generate(compressed=False)   # uncompressed
+
+key.public_key       # "0x02a1b2..." - give this to the ledger
+key.private_key      # store this
+
+restored = Secp256k1KeyPair.from_keys(key.public_key, key.private_key)
+verifier = Secp256k1KeyPair.from_public_key(key.public_key)
+```
+
+### secp256k1 is encoded nothing like the post-quantum keys
+
+- **Keys are `0x`-prefixed hex, not base64.** The prefix is required rather
+  than tolerated, because hex without it can decode as base64 into
+  plausible-looking bytes of the wrong length.
+- **Public keys have two valid lengths**, 33 compressed and 65 uncompressed,
+  and the ledger accepts both. A length and a SEC1 point prefix that disagree
+  are rejected by name.
+- **Private scalars are always 32 bytes**, left-padded.
+- **Signatures are SHA-256 → ECDSA → DER**, and DER length varies.
+
+### low-S, in both directions
+
+**Signing** is RFC 6979 deterministic and low-S. `python-ecdsa` does **not**
+normalise on its own, and it matters: without the normalisation this SDK
+applies, 4 of the 12 published vectors come out high-S and differ from the
+canonical form. Low-S is not for the ledger, which accepts either, but for
+`@noble/curves` — the reference for the JavaScript side — and for libsecp256k1
+and Rust's `k256`, all of which reject high-S by default.
+
+**Verification accepts high-S**, because the ledger verifies through OpenSSL
+and produces high-S freely. Rejecting those would fail on roughly half of all
+valid signatures, and the half that succeeded would look like an intermittent
+fault. `python-ecdsa` is permissive here — measured against the vectors, it
+accepts all 7 high-S cases — which is why it is used.
+
+Because signing is deterministic, this SDK's signatures are byte-identical to
+`@noble/curves` for the same key and message, asserted against published
+reference bytes on every test run.
+
+`KeyType.from_wire` parses `bitcoin` and `ethereum` as secp256k1, because the
+ledger routes them to identical verification. They are never emitted.
+
 ## Post-quantum keys
 
 | Type | Wire string | Public | Private | Signature |

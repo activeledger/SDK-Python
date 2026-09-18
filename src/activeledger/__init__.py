@@ -78,4 +78,13 @@ def __getattr__(name):
         from . import pq
 
         return getattr(pq, name)
+
+    # Same reasoning for secp256k1: importing this package must not require
+    # the [ec] extra either, and a caller who never touches secp256k1 should
+    # never be asked to install python-ecdsa.
+    if name == "Secp256k1KeyPair":
+        from . import ec
+
+        return ec.Secp256k1KeyPair
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

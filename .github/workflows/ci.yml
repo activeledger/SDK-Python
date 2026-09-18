@@ -22,6 +22,19 @@ jobs:
       - run: pip install -e '.[dev]'
       - run: pytest tests/ --ignore=tests/test_pq_conformance.py --ignore=tests/integration -q
 
+  elliptic-curve:
+    # secp256k1 needs the [ec] extra. Separate from core for the same reason
+    # the pq job is: if core installed it, nothing would prove the package
+    # still works without it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[ec,dev]'
+      - run: pytest tests/ --ignore=tests/test_pq_conformance.py --ignore=tests/integration -q
+
   post-quantum:
     runs-on: ubuntu-latest
     steps:
@@ -33,5 +46,5 @@ jobs:
       # of these. libssl-dev especially: without it CMake fails and the only
       # symptom is "No oqs shared libraries found".
       - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libssl-dev
-      - run: pip install -e '.[pq,dev]'
+      - run: pip install -e '.[pq,ec,dev]'
       - run: pytest tests/ --ignore=tests/integration -q

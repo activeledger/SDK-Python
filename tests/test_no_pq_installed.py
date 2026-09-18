@@ -76,7 +76,7 @@ def test_transactions_build_and_sign_without_liboqs():
 
         class ExternalSigner:
             key_type = KeyType.ML_DSA_65
-            public_key_b64 = "PUB"
+            public_key = "PUB"
             def sign(self, message):
                 return b"signed-elsewhere"
 

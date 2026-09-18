@@ -52,6 +52,30 @@ class KeyType(str, Enum):
     def __str__(self) -> str:  # so f-strings give the wire value
         return self.value
 
+    @classmethod
+    def from_wire(cls, wire: str) -> "KeyType":
+        """Parses a wire string, rejecting anything unrecognised.
+
+        Deliberately strict and case-sensitive: the ledger compares these
+        exactly, so accepting ``ML-DSA-65`` here would only move the failure
+        somewhere less informative.
+
+        ``bitcoin`` and ``ethereum`` parse as secp256k1, because the ledger
+        routes them to identical verification and an existing identity may
+        already carry either. They are never emitted -- the value is always
+        written back as ``secp256k1``.
+        """
+        if wire in ("bitcoin", "ethereum"):
+            return cls.SECP256K1
+
+        try:
+            return cls(wire)
+        except ValueError:
+            raise ValueError(
+                f"Unknown key type {wire!r} - expected rsa, secp256k1, "
+                "ml-dsa-65 or falcon-512"
+            ) from None
+
 
 @runtime_checkable
 class Signer(Protocol):
@@ -68,7 +92,7 @@ class Signer(Protocol):
         ...
 
     @property
-    def public_key_b64(self) -> str:
+    def public_key(self) -> str:
         ...
 
     def sign(self, message: bytes) -> bytes:

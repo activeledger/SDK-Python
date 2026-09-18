@@ -35,7 +35,7 @@ def test_verifies_every_published_signature(vectors):
 def test_round_trips_published_keys_without_re_deriving(vectors):
     for v in vectors:
         kp = KeyPair.from_keys(ALG[v["type"]], v["publicKey"], v["privateKey"])
-        assert kp.public_key_b64 == v["publicKey"]
+        assert kp.public_key == v["publicKey"]
         assert kp.private_key_b64 == v["privateKey"]
 
 
@@ -64,7 +64,7 @@ def test_generated_key_sizes_match_the_ledger():
     sizes = {KeyType.ML_DSA_65: (1952, 4032), KeyType.FALCON_512: (897, 1281)}
     for key_type, (want_public, want_private) in sizes.items():
         kp = KeyPair.generate(key_type)
-        assert len(base64.b64decode(kp.public_key_b64)) == want_public
+        assert len(base64.b64decode(kp.public_key)) == want_public
         assert len(base64.b64decode(kp.private_key_b64)) == want_private
 
 
@@ -115,7 +115,7 @@ def test_falcon_keys_keep_their_header_byte():
     # so 897/1281. A codec shim added by analogy with the JVM SDK would
     # corrupt every key.
     kp = KeyPair.generate(KeyType.FALCON_512)
-    assert base64.b64decode(kp.public_key_b64)[0] == 0x09
+    assert base64.b64decode(kp.public_key)[0] == 0x09
     assert base64.b64decode(kp.private_key_b64)[0] == 0x59
 
 
@@ -129,4 +129,4 @@ def test_verify_only_keypair_refuses_to_sign(vectors):
 
 def test_repr_does_not_leak_key_material():
     kp = KeyPair.generate(KeyType.ML_DSA_65)
-    assert kp.public_key_b64[:20] not in repr(kp)
+    assert kp.public_key[:20] not in repr(kp)

@@ -129,7 +129,7 @@ class KeyPair:
         return self._key_type
 
     @property
-    def public_key_b64(self) -> str:
+    def public_key(self) -> str:
         return base64.b64encode(self._public).decode("ascii")
 
     @property

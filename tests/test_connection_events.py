@@ -79,7 +79,7 @@ def test_onboard_raises_when_no_stream_was_created(server):
 
     class Stub:
         key_type = type("K", (), {"value": "ml-dsa-65"})()
-        public_key_b64 = "PUB"
+        public_key = "PUB"
 
         def sign(self, m):
             return b"S"

@@ -58,7 +58,7 @@ def onboard_transaction(signer: Signer, label: str = "identity") -> Transaction:
         "$i": {
             label: {
                 "type": signer.key_type.value,
-                "publicKey": signer.public_key_b64,
+                "publicKey": signer.public_key,
             }
         },
         "$o": {},

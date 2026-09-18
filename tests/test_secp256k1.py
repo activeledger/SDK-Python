@@ -44,19 +44,39 @@ def test_high_s_signatures_from_elsewhere_still_verify(ec_vectors):
     here. A verifier enforcing low-S would reject roughly half of everything
     the ledger makes, and the half that succeeded would look like an
     intermittent fault.
+
+    Uses the PUBLISHED high-S form, which every vector carries. Filtering the
+    vectors for whichever happened to land high made the coverage depend on
+    the random k that generated the file; this does not.
     """
-    high = [v for v in ec_vectors if is_high_s_base64(v["signature"])]
+    for v in ec_vectors:
+        # The fixture must be what it claims. A "high-S" signature that is not
+        # high-S would pass a permissive verifier for the wrong reason: green,
+        # and proving nothing.
+        assert is_high_s_base64(v["highSSignature"]), (
+            f"{v['messageName']}/{v['publicKeyForm']}: "
+            "the published high-S fixture is not high-S"
+        )
 
-    assert high, "the published vectors no longer contain a high-S signature"
-
-    for v in high:
         key = Secp256k1KeyPair.from_public_key(v["publicKey"])
 
         assert key.verify(
-            v["message"].encode("utf-8"), base64.b64decode(v["signature"])
+            v["message"].encode("utf-8"), base64.b64decode(v["highSSignature"])
         ), (
             f"rejected a high-S signature ({v['messageName']}/{v['publicKeyForm']}) "
             "- low-S is being enforced on verify"
+        )
+
+
+def test_the_high_s_form_still_rejects_a_tampered_message(ec_vectors):
+    """Permissive about s only. Accepting high-S must not have quietly
+    widened anything else."""
+    for v in ec_vectors:
+        key = Secp256k1KeyPair.from_public_key(v["publicKey"])
+
+        assert not key.verify(
+            v["message"].encode("utf-8") + b" ",
+            base64.b64decode(v["highSSignature"]),
         )
 
 

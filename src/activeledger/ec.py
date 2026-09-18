@@ -250,6 +250,15 @@ def _decode_hex(value: str, role: str) -> bytes:
     ledger stores, and a hex string without it can decode as base64 into
     plausible-looking bytes of the wrong length.
     """
+    # Checked explicitly so None reports what it is. Everything else on this
+    # path explains itself; letting None fall through to a raw attribute error
+    # is the one case that would not, and it is the likeliest one to arrive
+    # from a config file or a database column.
+    if not isinstance(value, str):
+        raise TypeError(
+            f"secp256k1 {role} key must be a string, got {type(value).__name__}"
+        )
+
     if not value.startswith("0x"):
         raise ValueError(
             f"secp256k1 {role} key must start with '0x' - that prefix is part of what "

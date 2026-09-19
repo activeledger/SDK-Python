@@ -141,6 +141,62 @@ checker = KeyPair.from_public(KeyType.FALCON_512, pub_b64)
 
 ---
 
+## Seeds and recovery phrases
+
+```python
+from activeledger import Secp256k1KeyPair, recovery
+
+key = Secp256k1KeyPair.from_seed(seed)                 # 32 bytes
+key = Secp256k1KeyPair.from_phrase(phrase)             # BIP-39
+key = Secp256k1KeyPair.from_phrase(phrase, "passphrase")
+```
+
+The same seed gives the same identity in every Activeledger SDK, which is what
+makes a seed the portable private-key format — it is how a private key moves
+between languages.
+
+A seed of the wrong length is **refused, not padded**: a padded seed is a
+different identity, not a malformed one. And for `secp256k1` the seed **is**
+the private scalar, so it has to be a valid one — a seed of zero, or one at or
+above the curve order, is refused rather than reduced mod *n*, because
+reducing produces a perfectly functional key belonging to a different identity
+and nothing downstream ever reports a problem.
+
+The phrase is validated, wordlist **and** checksum. A mistyped phrase that is
+not checked does not fail; it derives a valid key for an identity nobody owns,
+and the only symptom is the ledger not recognising it.
+
+`Secp256k1KeyPair.from_legacy_phrase()` recovers a phrase made by the older
+`@activeledger/sdk-bip39` package — recovery only, never for new keys.
+
+### Post-quantum keys cannot be derived from a seed here
+
+**Every other Activeledger SDK can do this; this one cannot, and it is not an
+oversight.** liboqs — the post-quantum backend — exposes no derandomised
+signature keygen: `OQS_SIG_keypair` takes no seed and there is no
+`OQS_SIG_keypair_derand`. `_keypair_derand` exists for KEMs only, verified in
+the 0.14.0 headers and against liboqs `main`, so there is nothing for the
+Python binding to wrap.
+
+`KeyPair.from_seed()` raises `NotImplementedError` with that explanation
+rather than being absent, so code ported from another SDK finds out here
+instead of from a signature the ledger rejects.
+
+Post-quantum identities still work fully — `generate()`, sign, verify, and
+export as key bytes. Only seed derivation is unavailable, and lifting it means
+moving off liboqs.
+
+The derivation every SDK shares, for reference:
+
+| Type | Seed from the BIP-39 seed `S` |
+| --- | --- |
+| `secp256k1` | `HMAC-SHA512("Bitcoin seed", S)[0..32]` |
+| `ml-dsa-65` | `HKDF-SHA512(S, salt="", info="activeledger-seed-v1:ml-dsa-65", 32)` |
+| `falcon-512` | `HKDF-SHA512(S, salt="", info="activeledger-seed-v1:falcon-512", 48)` |
+
+`recovery.derive_seed()` implements all three, so the post-quantum seeds can
+be derived here and used in an SDK that can consume them.
+
 ## Transactions
 
 ```python

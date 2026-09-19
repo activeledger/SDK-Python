@@ -140,6 +140,78 @@ class Secp256k1KeyPair:
         )
 
     @classmethod
+    def from_seed(cls, seed: bytes, compressed: bool = True) -> "Secp256k1KeyPair":
+        """Derives a key pair from a 32-byte seed.
+
+        For secp256k1 the seed IS the private scalar - there is no key
+        derivation step - which is why it has to be a valid one. A scalar of
+        zero, or one at or above the group order, is refused rather than
+        reduced mod n: reducing produces a perfectly functional key belonging
+        to a different identity, and nothing downstream ever reports a
+        problem.
+
+        The same seed gives the same identity in every Activeledger SDK,
+        which is what makes a seed the portable private-key format.
+
+        :raises ValueError: if the seed is the wrong length or not a usable
+            scalar
+        """
+        _require()
+
+        if len(seed) != PRIVATE_KEY_SIZE:
+            raise ValueError(
+                f"secp256k1 needs a {PRIVATE_KEY_SIZE}-byte seed, got {len(seed)}. It is "
+                "refused rather than padded: a padded seed is a different identity, not a "
+                "malformed one."
+            )
+
+        scalar = int.from_bytes(seed, "big")
+        if scalar == 0 or scalar >= _order():
+            raise ValueError(
+                "seed is not a valid secp256k1 private key - the scalar must be in [1, n-1]"
+            )
+
+        signing = SigningKey.from_string(seed, curve=SECP256k1)
+        verifying = signing.get_verifying_key()
+
+        pair = cls(
+            verifying,
+            signing,
+            verifying.to_string("compressed" if compressed else "uncompressed"),
+        )
+        return pair
+
+    @classmethod
+    def from_phrase(
+        cls, phrase: str, passphrase: str = "", compressed: bool = True
+    ) -> "Secp256k1KeyPair":
+        """Derives a key pair from a BIP-39 recovery phrase.
+
+        :raises ValueError: if the phrase is not a valid mnemonic
+        """
+        from .keys import KeyType
+        from .recovery import derive_seed, to_seed
+
+        return cls.from_seed(
+            derive_seed(KeyType.SECP256K1, to_seed(phrase, passphrase)), compressed
+        )
+
+    @classmethod
+    def from_legacy_phrase(cls, phrase: str, compressed: bool = True) -> "Secp256k1KeyPair":
+        """Recovers a key pair from a phrase made by ``@activeledger/sdk-bip39``.
+
+        That scheme is SHA256(phrase) used directly as the scalar - no key
+        stretching, no domain separation, no passphrase. It exists so an old
+        phrase can be recovered, never so a new key can be made with it.
+
+        Deliberately does NOT validate the mnemonic: the original package
+        hashed the string as given and never consulted the wordlist, so
+        rejecting a phrase here that it accepted would make a recoverable
+        identity unrecoverable.
+        """
+        return cls.from_seed(hashlib.sha256(phrase.encode("utf-8")).digest(), compressed)
+
+    @classmethod
     def from_public_key(cls, public_key: str) -> "Secp256k1KeyPair":
         """A verify-only key pair from a stored public key."""
         _require()

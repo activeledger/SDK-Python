@@ -43,5 +43,11 @@ Ledger = "https://github.com/activeledger/activeledger"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# The BIP-39 wordlist is data, not code, so it needs naming explicitly or a
+# wheel installs without it and recovery.py raises at first use rather than
+# at build time.
+[tool.setuptools.package-data]
+activeledger = ["bip39-english.txt"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

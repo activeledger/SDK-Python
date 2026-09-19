@@ -114,6 +114,39 @@ class KeyPair:
         return cls(key_type, public, private)
 
     @classmethod
+    def from_seed(cls, key_type: KeyType, seed: bytes) -> "KeyPair":
+        """Not available on this backend, and not because it was overlooked.
+
+        Every other Activeledger SDK derives post-quantum keys from a seed,
+        and the seed is how a private key moves between them. liboqs cannot:
+        ``OQS_SIG`` has no derandomised keypair function and no
+        ``length_keypair_seed`` field, so there is nothing for the Python
+        binding to wrap. ``_keypair_derand`` exists for KEMs only - checked
+        in the 0.14.0 headers and against liboqs ``main``.
+
+        Raised rather than left as an ``AttributeError`` so the gap says what
+        it is, and so a caller porting code from another SDK finds out here
+        rather than from a signature the ledger rejects.
+
+        :raises NotImplementedError: always
+        """
+        raise NotImplementedError(
+            f"This SDK cannot derive {key_type} from a seed. liboqs, its post-quantum "
+            "backend, exposes no derandomised signature keygen - OQS_SIG_keypair takes no "
+            "seed and there is no OQS_SIG_keypair_derand. Secp256k1KeyPair.from_seed works, "
+            "and a post-quantum identity can still be created here with generate() and "
+            "exported as key bytes."
+        )
+
+    @classmethod
+    def from_phrase(cls, key_type: KeyType, phrase: str, passphrase: str = "") -> "KeyPair":
+        """Not available on this backend. See :meth:`from_seed`.
+
+        :raises NotImplementedError: always
+        """
+        return cls.from_seed(key_type, b"")
+
+    @classmethod
     def from_keys(cls, key_type: KeyType, public_b64: str, private_b64: str) -> "KeyPair":
         return cls(key_type, _decode(public_b64, "public"), _decode(private_b64, "private"))
 

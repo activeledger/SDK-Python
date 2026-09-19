@@ -18,6 +18,7 @@ C toolchain.
 from .canonical import canonical_bytes, canonical_json
 from .connection import Connection, Identity, LedgerResponse
 from .events import EventStream, LedgerEvent
+from . import recovery
 from .keys import KeyType, Signer
 from .transaction import Transaction, TransactionBuilder, onboard_transaction
 
@@ -37,6 +38,8 @@ __all__ = [
     "onboard_transaction",
     "KeyPair",
     "PostQuantumUnavailable",
+    "Secp256k1KeyPair",
+    "recovery",
 ]
 
 __version__ = "1.1.1"

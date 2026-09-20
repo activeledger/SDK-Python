@@ -12,18 +12,28 @@ Python SDK for [Activeledger](https://github.com/activeledger/activeledger), wit
 
 ## Install
 
+> [!WARNING]
+> **`pip install activeledger-sdk` does not work** — this package is not on
+> PyPI yet. Install the wheel from the GitHub release:
+
 ```bash
-pip install activeledger-sdk           # core: zero dependencies
-pip install 'activeledger-sdk[pq]'     # + post-quantum signing
+pip install https://github.com/activeledger/SDK-Python/releases/download/v1.2.0/activeledger_sdk-1.2.0-py3-none-any.whl
 ```
 
-**Why two.** Post-quantum signing uses `liboqs-python`, which does *not* bundle liboqs -- on first import it builds it from source, needing git, CMake, a C compiler **and** OpenSSL headers. Making that mandatory would break `pip install` for anyone without all four. So the core is stdlib-only and post-quantum is opt-in.
+Optional extras are installed alongside it:
 
-You only need `[pq]` if this SDK generates or uses keys. If you sign elsewhere -- an HSM, a signing service, a user's wallet -- the core alone builds, signs and submits transactions with no compiled dependency at all.
+```bash
+pip install 'ecdsa>=0.19'          # secp256k1 (the [ec] extra)
+pip install 'liboqs-python>=0.16'  # post-quantum (the [pq] extra)
+```
 
-Ask for a post-quantum key without the extra and you get an `ImportError` naming it, not a CMake traceback from inside a dependency.
+The core has no dependencies. Post-quantum is opt-in because `liboqs-python`
+builds liboqs from source on first import, needing git, CMake, a C compiler
+and OpenSSL headers — mandatory for a client SDK would be close to unusable.
 
----
+Verified: the wheel installs into a clean venv and derives keys, with the
+BIP-39 wordlist included.
+
 
 ## Quick start
 

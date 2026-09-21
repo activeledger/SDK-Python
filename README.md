@@ -17,7 +17,7 @@ Python SDK for [Activeledger](https://github.com/activeledger/activeledger), wit
 > PyPI yet. Install the wheel from the GitHub release:
 
 ```bash
-pip install https://github.com/activeledger/SDK-Python/releases/download/v1.2.0/activeledger_sdk-1.2.0-py3-none-any.whl
+pip install https://github.com/activeledger/SDK-Python/releases/download/v1.3.0/activeledger_sdk-1.3.0-py3-none-any.whl
 ```
 
 Optional extras are installed alongside it:

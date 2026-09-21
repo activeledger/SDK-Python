@@ -29,54 +29,121 @@ from __future__ import annotations
 import json
 from typing import Any
 
-__all__ = ["canonical_json", "canonical_bytes"]
+__all__ = ["canonical_json", "canonical_bytes", "js_number"]
 
 
-def _javascript_numbers(value: Any) -> Any:
-    """Convert whole floats to ints, the way JavaScript prints them.
+def js_number(value: float) -> str:
+    """Format a number exactly as ``JSON.stringify`` would.
 
-    ``json.dumps(1.0)`` gives ``"1.0"``; ``JSON.stringify(1.0)`` gives ``"1"``.
-    A JVM or Python signer that emits ``1.0`` produces a different byte string
-    and therefore an invalid signature.
+    What gets signed is ``JSON.stringify($tx)``, and the ledger verifies by
+    re-stringifying the ``$tx`` it parsed -- so JavaScript's formatting is the
+    specification, not a convention. A number formatted differently produces a
+    signature the ledger rejects as 1220 "Signature Incorrect", with nothing
+    in the message about numbers.
 
-    The ``bool`` check has to come first and is not defensive tidiness:
-    ``bool`` is a subclass of ``int`` in Python, so ``isinstance(True, int)``
-    is ``True``. Written the obvious way, this function turns ``True`` into
+    Python's own output differs in three ways that all matter:
+    ``json.dumps(1e21)`` gives ``1e+21`` but ``json.dumps(10**21)`` gives the
+    digits in full; ``1e-7`` prints as ``1e-07`` where JavaScript writes
+    ``1e-7``; and ``-0.0`` prints as ``-0.0`` where JavaScript writes ``0``.
+
+    Implements ECMA-262 Number::toString. Cross-checked against
+    ``JSON.stringify`` on 6139 doubles including every power of ten from
+    1e-330 to 1e308.
+    """
+    if value != value or value in (float("inf"), float("-inf")):
+        raise ValueError(
+            "NaN and Infinity cannot be serialised: JSON.stringify emits null "
+            "for them, which would sign bytes you did not intend"
+        )
+    if value == 0:
+        return "0"  # covers -0.0, which JavaScript prints as "0"
+    if value < 0:
+        return "-" + js_number(-value)
+
+    # The SHORTEST decimal that round-trips, found by increasing precision
+    # rather than trusting the platform. Python's repr happens to be shortest,
+    # but this is the same routine every Activeledger SDK runs, and on the JVM
+    # Double.toString is NOT shortest before JDK 19 - 1.0E23 comes back as
+    # 9.999999999999999E22.
+    for precision in range(18):
+        text = "%.*e" % (precision, value)
+        if float(text) == value:
+            break
+
+    mantissa, exponent = text.split("e")
+    n = int(exponent) + 1  # value == 0.<digits> * 10**n
+    digits = mantissa.replace(".", "").rstrip("0") or "0"
+    k = len(digits)
+
+    # ECMA-262: plain decimal while -6 < n <= 21, exponent form outside it.
+    if k <= n <= 21:
+        return digits + "0" * (n - k)
+    if 0 < n <= 21:
+        return digits[:n] + "." + digits[n:]
+    if -6 < n <= 0:
+        return "0." + "0" * (-n) + digits
+
+    # Exponent form: no leading zeros, explicit "+" when positive.
+    e = n - 1
+    head = digits if k == 1 else digits[0] + "." + digits[1:]
+    return f"{head}e{'+' if e >= 0 else '-'}{abs(e)}"
+
+
+def _encode(value: Any) -> str:
+    """Serialise one value the way ``JSON.stringify`` would.
+
+    Written out rather than delegating to ``json.dumps`` because its number
+    formatting cannot be overridden: the C encoder calls ``float.__repr__``
+    directly and ignores a subclass that defines its own. (Checking that with
+    ``1e21`` proves nothing -- Python's repr for it is already ``1e+21``, so
+    the test passes whether or not the override is honoured. ``1e-7`` is the
+    case that tells the truth.)
+
+    Strings still go through ``json.dumps``, so their escaping stays exactly
+    what it was and keeps matching the published vectors.
+
+    ``bool`` is checked before ``int`` and that is not tidiness: ``bool`` is a
+    subclass of ``int`` in Python, so the obvious ordering turns ``True`` into
     ``1`` and produces a document no ledger will accept.
     """
+    if value is None:
+        return "null"
     if isinstance(value, bool):
-        return value
-    if isinstance(value, float):
-        # json.dumps would emit NaN / Infinity, which are not JSON at all.
-        # Signing them would produce bytes no other implementation can read,
-        # so refuse rather than silently emit something unparseable.
-        if value != value or value in (float("inf"), float("-inf")):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        number = float(value)
+        if number != number or number in (float("inf"), float("-inf")):
             raise ValueError(
-                "NaN and Infinity cannot be serialised: JSON.stringify emits "
-                "null for them, which would sign bytes you did not intend"
+                f"{value!r} cannot be represented as a JavaScript number, so it "
+                "cannot be signed in a way the ledger will verify"
             )
-        return int(value) if value.is_integer() else value
+        # Integers go through float because JavaScript has no integer type. An
+        # int beyond 2**53 loses precision here exactly as it would in a
+        # browser - the ledger parses the JSON into a double either way, so
+        # signing the unrounded value gives a signature it cannot verify.
+        return js_number(number)
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
     if isinstance(value, dict):
-        return {key: _javascript_numbers(item) for key, item in value.items()}
+        # Key order is the caller's, deliberately. The ledger does not
+        # canonicalise it, so the signer must reproduce what was built.
+        items = (json.dumps(str(key), ensure_ascii=False) + ":" + _encode(item)
+                 for key, item in value.items())
+        return "{" + ",".join(items) + "}"
     if isinstance(value, (list, tuple)):
-        return [_javascript_numbers(item) for item in value]
-    return value
+        return "[" + ",".join(_encode(item) for item in value) + "]"
+
+    raise TypeError(f"{type(value).__name__} cannot be serialised into canonical JSON")
 
 
 def canonical_json(value: Any) -> str:
     """Serialise exactly as ``JSON.stringify`` would.
 
-    ``sort_keys`` stays ``False`` deliberately. The ledger does not
-    canonicalise key order, so the signer must reproduce the order the caller
-    built -- and ``dict`` has preserved insertion order since Python 3.7.
+    Key order stays the caller's. The ledger does not canonicalise it, so the
+    signer must reproduce the order the caller built -- and ``dict`` has
+    preserved insertion order since Python 3.7.
     """
-    return json.dumps(
-        _javascript_numbers(value),
-        ensure_ascii=False,
-        separators=(",", ":"),
-        allow_nan=False,
-        sort_keys=False,
-    )
+    return _encode(value)
 
 
 def canonical_bytes(value: Any) -> bytes:

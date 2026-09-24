@@ -2,7 +2,7 @@
 
 Requires the optional extra::
 
-    pip install 'activeledger-sdk[pq]'
+    pip install 'activeledger[pq]'
 
 **No key codec here, deliberately.** liboqs already produces and accepts the
 exact byte forms the ledger uses -- including Falcon's 1-byte header, so keys

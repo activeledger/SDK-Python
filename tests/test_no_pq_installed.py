@@ -99,7 +99,7 @@ def test_asking_for_a_pq_key_names_the_extra():
         try:
             KeyPair.generate(KeyType.ML_DSA_65)
         except ImportError as exc:
-            assert "activeledger-sdk[pq]" in str(exc), str(exc)
+            assert "activeledger[pq]" in str(exc), str(exc)
             print("OK")
         else:
             raise AssertionError("expected ImportError")

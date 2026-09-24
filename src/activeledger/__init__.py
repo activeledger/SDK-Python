@@ -2,7 +2,7 @@
 
 The core is stdlib-only. Post-quantum keys need the optional extra::
 
-    pip install 'activeledger-sdk[pq]'
+    pip install 'activeledger[pq]'
 
 Everything else -- canonical JSON, transaction building, submission and event
 subscription -- works with no compiled dependency at all, so an application

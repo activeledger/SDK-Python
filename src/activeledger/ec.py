@@ -9,7 +9,7 @@ the ledger rejects as 1220 "Signature Incorrect" while saying nothing else.
 
 Needs the ``[ec]`` extra::
 
-    pip install activeledger-sdk[ec]
+    pip install activeledger[ec]
 
 ``python-ecdsa`` is pure Python with no build step, unlike ``coincurve``
 (libsecp256k1), which needs a C toolchain -- and which, unlike this, rejects
@@ -41,7 +41,7 @@ PUBLIC_KEY_UNCOMPRESSED_SIZE = 65
 PRIVATE_KEY_SIZE = 32
 
 _MISSING = (
-    "secp256k1 support needs the 'ec' extra: pip install activeledger-sdk[ec]. "
+    "secp256k1 support needs the 'ec' extra: pip install activeledger[ec]. "
     "It installs python-ecdsa, which is pure Python and has no build step."
 )
 

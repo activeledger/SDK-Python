@@ -13,7 +13,7 @@ Python SDK for [Activeledger](https://github.com/activeledger/activeledger), wit
 ## Install
 
 > [!WARNING]
-> **`pip install activeledger-sdk` does not work** — this package is not on
+> **`pip install activeledger` does not work** — this package is not on
 > PyPI yet. Install the wheel from the GitHub release:
 
 ```bash
@@ -64,7 +64,7 @@ works with hardware wallets and HSMs, and is the only way to sign for an
 identity created before post-quantum support.
 
 ```bash
-pip install activeledger-sdk[ec]
+pip install activeledger[ec]
 ```
 
 It installs `python-ecdsa`, which is pure Python with no build step — unlike

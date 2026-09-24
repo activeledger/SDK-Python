@@ -79,4 +79,4 @@ def test_using_a_secp256k1_key_names_the_extra():
         """
     )
     assert result.returncode == 0, result.stderr
-    assert "activeledger-sdk[ec]" in result.stdout
+    assert "activeledger[ec]" in result.stdout

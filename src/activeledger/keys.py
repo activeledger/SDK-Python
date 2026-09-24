@@ -25,7 +25,7 @@ __all__ = ["KeyType", "Signer", "PQ_EXTRA_HINT"]
 
 PQ_EXTRA_HINT = (
     "Post-quantum support needs the optional extra:\n"
-    "    pip install 'activeledger-sdk[pq]'\n"
+    "    pip install 'activeledger[pq]'\n"
     "It pulls in liboqs-python, which builds liboqs from source on first "
     "import and needs git, CMake, a C compiler and OpenSSL headers. The core "
     "SDK deliberately does not require any of that, so transaction building, "

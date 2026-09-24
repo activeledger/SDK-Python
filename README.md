@@ -12,12 +12,8 @@ Python SDK for [Activeledger](https://github.com/activeledger/activeledger), wit
 
 ## Install
 
-> [!WARNING]
-> **`pip install activeledger` does not work** — this package is not on
-> PyPI yet. Install the wheel from the GitHub release:
-
 ```bash
-pip install https://github.com/activeledger/SDK-Python/releases/download/v1.3.0/activeledger_sdk-1.3.0-py3-none-any.whl
+pip install activeledger
 ```
 
 Optional extras are installed alongside it:
@@ -31,7 +27,7 @@ The core has no dependencies. Post-quantum is opt-in because `liboqs-python`
 builds liboqs from source on first import, needing git, CMake, a C compiler
 and OpenSSL headers — mandatory for a client SDK would be close to unusable.
 
-Verified: the wheel installs into a clean venv and derives keys, with the
+Verified: installs from PyPI into a clean venv and derives keys, with the
 BIP-39 wordlist included.
 
 

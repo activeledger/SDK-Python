@@ -1,0 +1,129 @@
+# Cuts a release: test -> bump -> commit -> tag -> push -> publish -> verify.
+#
+# Dispatched by hand with a version rather than triggered by a tag. GitHub does
+# not start new workflow runs from events created with the default
+# GITHUB_TOKEN, so `on: push: tags` never fires for a tag a workflow pushed.
+# Doing it in one run sidesteps that, and bumping BEFORE the tag is what keeps
+# the source tree, the tag and the published wheel all reporting the same
+# number.
+#
+# The last job is the one that matters. Four separate publish defects this
+# month were "artifact correct, join to consumer broken" - a Go module path no
+# proxy would serve, a JVM descriptor no resolver could parse. The API
+# accepting an upload proves nothing; installing it from the registry does.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, without the leading v (e.g. 1.4.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e ".[ec]" build pytest
+
+      # Before the bump, so a failing suite costs nothing but a red run.
+      - name: Test
+        run: pytest -q
+
+      - name: Bump
+        run: |
+          set -eu
+          v="${{ inputs.version }}"
+          sed -i "0,/^version = \".*\"/s//version = \"$v\"/" pyproject.toml
+          sed -i "s/^__version__ = \".*\"/__version__ = \"$v\"/" src/activeledger/__init__.py
+          grep -q "version = \"$v\"" pyproject.toml
+          grep -q "__version__ = \"$v\"" src/activeledger/__init__.py
+
+      - name: Build
+        run: python -m build
+
+      # The wordlist is package data, not code. A wheel built without it fails
+      # only at first use, which may be in someone else's application.
+      - name: Check the wheel carries its data files
+        run: |
+          set -eu
+          python -m zipfile -l dist/*.whl | grep -q "bip39-english.txt"
+
+      - name: Commit, tag and push
+        run: |
+          set -eu
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore(release): v${{ inputs.version }}"
+          git tag -a "v${{ inputs.version }}" -m "v${{ inputs.version }}"
+          # master first: if branch protection rejects it the tag is never
+          # pushed, and no half-release exists. A tag pointing at a commit that
+          # is not on master is worse than no tag.
+          git push origin HEAD:master
+          git push origin "v${{ inputs.version }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ inputs.version }}" --title "v${{ inputs.version }}" --generate-notes dist/*
+
+  publish:
+    needs: release
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      # Trusted publishing: PyPI mints a short-lived token from this, so there
+      # is no long-lived secret to leak or rotate.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  verify:
+    needs: [release, publish]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # PyPI's CDN takes a moment to serve a new version. Retry rather than
+      # fail, but do not pass silently if it never appears.
+      - name: Install from PyPI and use it
+        run: |
+          set -eu
+          v="${{ needs.release.outputs.version }}"
+          for i in $(seq 1 10); do
+            pip install "activeledger==$v" "ecdsa>=0.19" && break
+            echo "not on PyPI yet (attempt $i)"; sleep 20
+          done
+          python - <<'PY'
+          import activeledger
+          from activeledger import canonical_json, Secp256k1KeyPair
+          print("installed", activeledger.__version__)
+          # Exercises the number formatting and the bundled wordlist, which are
+          # the two things a bad build loses quietly.
+          assert canonical_json({"n": 1e-7}) == '{"n":1e-7}', "number formatting"
+          Secp256k1KeyPair.from_phrase(
+              "legal winner thank year wave sausage worth useful legal winner thank yellow")
+          print("registry install verified")
+          PY

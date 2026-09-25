@@ -3,6 +3,10 @@
   <img src="https://raw.githubusercontent.com/activeledger/activeledger/master/docs/assets/Asset-23.png" alt="Activeledger" width="300"/>
 </picture>
 
+[![PyPI](https://img.shields.io/pypi/v/activeledger)](https://pypi.org/project/activeledger/)
+[![Python](https://img.shields.io/pypi/pyversions/activeledger)](https://pypi.org/project/activeledger/)
+[![licence](https://img.shields.io/badge/licence-MIT-blue)](https://github.com/activeledger/SDK-Python/blob/master/LICENSE)
+
 # Activeledger SDK for Python
 
 Python SDK for [Activeledger](https://github.com/activeledger/activeledger), with post-quantum identity support.

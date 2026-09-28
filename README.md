@@ -258,29 +258,20 @@ for value in ledger.submit(tx).responses:
 
 ---
 
-## Events (SSE)
+## Events (SSE) - deprecated
 
-Subscription is a generator, so leaving the loop closes the connection:
+`EventStream` (`ledger.events`) is **deprecated** and will be removed in the next major version.
 
-```python
-for event in ledger.events.subscribe():
-    print(event.name, event.id, event.data)
-    if finished:
-        break        # connection closes here
-```
+Events are no longer served by ActiveCore, which is itself deprecated and
+should not be used. A node serves contract events from its own storage
+service at `http://localhost:<storage port>/activeledgerevents/events`, and
+that service must never be reachable beyond the node's host - so a client
+SDK has nothing it should connect to.
 
-Each event is a `LedgerEvent(name, data, id)`. `name` and `id` are `None` when the server did not send them.
-
-The parser handles the framing rules that actually matter:
-
-- multiple `data:` lines in one event concatenate with newlines -- treating them as separate events is the classic SSE bug
-- `:` comment lines (heartbeats) are ignored, not delivered as empty events
-- `event:` and `id:` never leak into the following event
-- an event still pending when the stream ends is delivered
-
-Subscribe to another path with `ledger.events.subscribe("/events/mystream")`.
-
-There is no read timeout by default: event streams are long-lived, and a timeout would close them for being quiet.
+To react to events, run your own server-sent events listener on the node's
+host and relay what your application needs through your own backend. Each
+event is an SSE frame whose `id` is `<milliseconds>-<counter>,<umid>` and
+whose `data` is `{"name", "data", "phase", "contract"}`.
 
 ---
 

@@ -9,6 +9,11 @@ import pytest
 from activeledger.connection import Connection, LedgerResponse
 from activeledger.events import EventStream
 
+# EventStream is deprecated; its behaviour stays tested until it is removed.
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:EventStream is deprecated:DeprecationWarning"
+)
+
 
 class _Handler(BaseHTTPRequestHandler):
     post_body = "{}"
@@ -151,3 +156,8 @@ def test_breaking_out_of_the_loop_closes_the_connection(server):
     first = next(stream)
     stream.close()
     assert first.data == "one"
+
+
+def test_event_stream_warns_that_it_is_deprecated():
+    with pytest.warns(DeprecationWarning, match="EventStream is deprecated"):
+        EventStream("http://127.0.0.1:1").subscribe()

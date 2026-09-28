@@ -1,5 +1,12 @@
 """Server-sent event subscription. Standard library only.
 
+.. deprecated::
+   Events are no longer served by ActiveCore, which is itself deprecated. A
+   node serves contract events from its own storage service, which must never
+   be reachable beyond the node's host, so a client has nothing it should
+   connect to. Run your own server-sent events listener on the node's host.
+   :class:`EventStream` will be removed in the next major version.
+
 The SSE framing rules that matter here are few and specific, and getting any
 of them wrong is a bug that only shows up under real traffic:
 
@@ -15,6 +22,7 @@ of them wrong is a bug that only shows up under real traffic:
 from __future__ import annotations
 
 import urllib.request
+import warnings
 from typing import Iterator, NamedTuple, Optional
 
 __all__ = ["LedgerEvent", "EventStream"]
@@ -50,6 +58,19 @@ class EventStream:
         self.timeout = timeout
 
     def subscribe(self, path: str = "/events") -> Iterator[LedgerEvent]:
+        """Deprecated -- see the module docstring."""
+        # Warned here, at the call, rather than inside the generator, where it
+        # would only fire once iteration started.
+        warnings.warn(
+            "EventStream is deprecated and will be removed in the next major "
+            "version: events are served on the node's host only. Run your own "
+            "server-sent events listener there.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._subscribe(path)
+
+    def _subscribe(self, path: str) -> Iterator[LedgerEvent]:
         request = urllib.request.Request(
             self.base_url + path,
             headers={"Accept": "text/event-stream", "Cache-Control": "no-cache"},

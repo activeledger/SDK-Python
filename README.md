@@ -67,7 +67,7 @@ works with hardware wallets and HSMs, and is the only way to sign for an
 identity created before post-quantum support.
 
 ```bash
-pip install activeledger[ec]
+pip install 'activeledger[ec]'
 ```
 
 It installs `python-ecdsa`, which is pure Python with no build step — unlike
@@ -134,7 +134,7 @@ Post-quantum keys are base64 of raw algorithm bytes.
 ```python
 key = KeyPair.generate(KeyType.FALCON_512)
 
-key.public_key_b64      # give this to the ledger
+key.public_key          # give this to the ledger
 key.private_key_b64     # keep this
 key.key_type            # KeyType.FALCON_512
 
@@ -277,7 +277,7 @@ whose `data` is `{"name", "data", "phase", "contract"}`.
 
 ## Signing elsewhere
 
-Anything with `key_type`, `public_key_b64` and `sign(bytes)` satisfies the `Signer` protocol, so the core needs no crypto dependency:
+Anything with `key_type`, `public_key` and `sign(bytes)` satisfies the `Signer` protocol, so the core needs no crypto dependency:
 
 ```python
 from activeledger import KeyType, TransactionBuilder
@@ -286,7 +286,7 @@ class HsmSigner:
     key_type = KeyType.ML_DSA_65
 
     @property
-    def public_key_b64(self):
+    def public_key(self):
         return my_hsm.public_key()
 
     def sign(self, message: bytes) -> bytes:

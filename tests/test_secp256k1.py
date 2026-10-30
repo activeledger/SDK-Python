@@ -185,6 +185,19 @@ def test_wrong_length_public_key_names_both_valid_lengths():
     assert "65" in str(error.value)
 
 
+def test_an_uncompressed_point_that_is_not_on_the_curve_is_rejected():
+    # The generator, with Y off by one.
+    gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
+    gy = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
+
+    def point(y):
+        return "0x04" + gx.to_bytes(32, "big").hex() + y.to_bytes(32, "big").hex()
+
+    assert Secp256k1KeyPair.from_public_key(point(gy)).can_sign is False
+    with pytest.raises(ValueError, match="not a point on the curve"):
+        Secp256k1KeyPair.from_public_key(point(gy + 1))
+
+
 def test_a_prefix_that_contradicts_the_length_is_rejected():
     """A length and a point prefix that disagree means the forms got mixed."""
     with pytest.raises(ValueError, match="0x04"):

@@ -169,6 +169,12 @@ def test_non_post_quantum_types_are_refused(key_type):
         KeyPair(key_type, b"\x00" * 33)
 
 
+@pytest.mark.parametrize("key_type", [KeyType.RSA, KeyType.SECP256K1])
+def test_generate_refuses_non_post_quantum_types_with_a_value_error(key_type):
+    with pytest.raises(ValueError, match="not a post-quantum type"):
+        KeyPair.generate(key_type)
+
+
 def test_invalid_base64_is_reported_by_role(pair):
     with pytest.raises(ValueError, match="public key is not valid base64"):
         KeyPair.from_public(pair.key_type, "not base64!!")

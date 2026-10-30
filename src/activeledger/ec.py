@@ -83,9 +83,10 @@ def is_high_s(signature: bytes) -> bool:
 
 def is_high_s_base64(signature: str) -> bool:
     """:func:`is_high_s` for a base64 DER signature."""
+    _require()
     try:
         return is_high_s(base64.b64decode(signature))
-    except Exception:
+    except ValueError:
         return False
 
 
@@ -218,7 +219,14 @@ class Secp256k1KeyPair:
         raw = _decode_hex(public_key, "public")
         _check_public(raw)
 
-        return cls(VerifyingKey.from_string(raw, curve=SECP256k1), None, raw)
+        try:
+            verifying = VerifyingKey.from_string(raw, curve=SECP256k1)
+        except Exception as exc:
+            # ecdsa rejects a point that is not on the curve, but with a bare
+            # AssertionError subclass; an off-curve key is a bad value.
+            raise ValueError(f"secp256k1 public key is not a point on the curve: {exc}") from exc
+
+        return cls(verifying, None, raw)
 
     @classmethod
     def from_keys(cls, public_key: str, private_key: str) -> "Secp256k1KeyPair":

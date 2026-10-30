@@ -68,6 +68,14 @@ _SIZES = {
 }
 
 
+def _check_type(key_type: KeyType) -> None:
+    if key_type not in _MECHANISM:
+        raise ValueError(
+            f"{key_type} is not a post-quantum type; "
+            f"expected one of {', '.join(k.value for k in _MECHANISM)}"
+        )
+
+
 class KeyPair:
     """A post-quantum key pair that interoperates with Activeledger.
 
@@ -83,11 +91,7 @@ class KeyPair:
         public_bytes: bytes,
         private_bytes: Optional[bytes] = None,
     ) -> None:
-        if key_type not in _MECHANISM:
-            raise ValueError(
-                f"{key_type} is not a post-quantum type; "
-                f"expected one of {', '.join(k.value for k in _MECHANISM)}"
-            )
+        _check_type(key_type)
         want_public, want_private = _SIZES[key_type]
         if len(public_bytes) != want_public:
             raise ValueError(
@@ -107,6 +111,7 @@ class KeyPair:
 
     @classmethod
     def generate(cls, key_type: KeyType) -> "KeyPair":
+        _check_type(key_type)
         oqs = _oqs()
         with oqs.Signature(_MECHANISM[key_type]) as signer:
             public = signer.generate_keypair()

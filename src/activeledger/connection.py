@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import urllib.error
 import urllib.request
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from .keys import Signer
 from .transaction import Transaction, onboard_transaction
@@ -16,12 +16,15 @@ __all__ = ["Connection", "LedgerResponse", "Identity"]
 class LedgerResponse:
     """The ledger's reply to a submitted transaction."""
 
-    def __init__(self, raw: str) -> None:
+    def __init__(self, raw: str, status: int = 200) -> None:
         self.raw = raw
+        self.status = status
         try:
-            self._doc: Dict[str, Any] = json.loads(raw) if raw else {}
+            doc = json.loads(raw) if raw else None
         except json.JSONDecodeError:
-            self._doc = {}
+            doc = None
+        self._doc: Dict[str, Any] = doc if isinstance(doc, dict) else {}
+        self._valid = isinstance(doc, dict)
 
     @property
     def errors(self) -> List[str]:
@@ -32,9 +35,22 @@ class LedgerResponse:
         transaction, so treating HTTP success as ledger success is wrong --
         and it is the kind of wrong that looks fine until something important
         silently does not happen.
+
+        A non-2xx status, or a body that is not a JSON object, is also an
+        error: nothing here can show the transaction committed.
         """
-        summary = self._doc.get("$summary") or {}
-        return list(summary.get("errors") or [])
+        errors: List[str] = []
+        if not 200 <= self.status < 300:
+            errors.append(f"HTTP {self.status}")
+        if not self._valid:
+            errors.append("Response body is not a JSON object")
+        summary = self._doc.get("$summary")
+        if summary is not None and not isinstance(summary, dict):
+            errors.append("Response $summary is not a JSON object")
+        elif summary:
+            reported = summary.get("errors") or []
+            errors.extend(reported if isinstance(reported, list) else [str(reported)])
+        return errors
 
     @property
     def committed(self) -> bool:
@@ -42,13 +58,17 @@ class LedgerResponse:
 
     @property
     def new_streams(self) -> List[str]:
-        streams = self._doc.get("$streams") or {}
-        return [entry.get("id") for entry in (streams.get("new") or []) if entry.get("id")]
+        streams = self._doc.get("$streams")
+        created = streams.get("new") if isinstance(streams, dict) else None
+        if not isinstance(created, list):
+            return []
+        return [e.get("id") for e in created if isinstance(e, dict) and e.get("id")]
 
     @property
     def responses(self) -> List[Any]:
         """Values contracts returned via ``returnToRemote``."""
-        return list(self._doc.get("$responses") or [])
+        responses = self._doc.get("$responses")
+        return list(responses) if isinstance(responses, list) else []
 
     def __repr__(self) -> str:
         return f"<LedgerResponse committed={self.committed} errors={self.errors}>"
@@ -90,7 +110,8 @@ class Connection:
         tampered body cannot be expressed through :meth:`submit`, because the
         builder would re-sign it into a valid transaction.
         """
-        return LedgerResponse(self._post("/", body))
+        status, text = self._post("/", body)
+        return LedgerResponse(text, status)
 
     def onboard(self, signer: Signer, label: str = "identity") -> Identity:
         """Onboard a new identity and return it.
@@ -106,7 +127,7 @@ class Connection:
 
     # -- internals -------------------------------------------------------
 
-    def _post(self, path: str, body: str) -> str:
+    def _post(self, path: str, body: str) -> Tuple[int, str]:
         request = urllib.request.Request(
             self.base_url + path,
             data=body.encode("utf-8"),
@@ -115,12 +136,13 @@ class Connection:
         )
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                return response.read().decode("utf-8")
+                return response.status, response.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             # A ledger rejection is a 200 with errors in the body, so an
-            # HTTPError is a transport or routing problem - surfacing the body
-            # matters more than the status.
-            return exc.read().decode("utf-8", errors="replace")
+            # HTTPError is a transport or routing problem. The body is kept,
+            # but the status travels with it so the response cannot look
+            # committed.
+            return exc.code, exc.read().decode("utf-8", errors="replace")
 
     def _get(self, path: str) -> str:
         request = urllib.request.Request(self.base_url + path, method="GET")

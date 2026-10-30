@@ -257,3 +257,17 @@ def test_repr_does_not_leak_the_private_key():
 
     assert key.private_key not in rendered
     assert key.public_key not in rendered
+
+
+def test_a_wrong_length_private_key_is_refused(ec_vectors):
+    v = ec_vectors[0]
+
+    with pytest.raises(ValueError, match="expected 32"):
+        Secp256k1KeyPair.from_keys(v["publicKey"], "0x" + "ab" * 31)
+
+
+def test_malformed_der_is_not_high_s():
+    # Not a DER signature at all; the helpers answer rather than raise.
+    assert is_high_s(b"") is False
+    assert is_high_s(b"\x30") is False
+    assert is_high_s_base64("!!!not base64!!!") is False

@@ -116,6 +116,15 @@ def test_ml_dsa_signatures_are_fixed_length_and_falcon_are_not():
 
 # -- restoring keys ----------------------------------------------------------------
 
+def test_a_private_key_that_does_not_match_the_public_key_is_refused(pair):
+    other = KeyPair.generate(pair.key_type)
+
+    with pytest.raises(ValueError, match="does not match"):
+        KeyPair.from_keys(pair.key_type, pair.public_key, other.private_key_b64)
+    with pytest.raises(ValueError, match="does not match"):
+        KeyPair(pair.key_type, pair._public, other._private)
+
+
 def test_from_keys_restores_a_pair_that_interoperates(pair):
     restored = KeyPair.from_keys(pair.key_type, pair.public_key, pair.private_key_b64)
     assert restored.public_key == pair.public_key
@@ -228,7 +237,9 @@ def _without_liboqs(body: str) -> subprocess.CompletedProcess:
     )
 
 
-def test_a_key_built_from_bytes_needs_liboqs_only_to_sign_or_verify():
+def test_a_public_key_needs_liboqs_only_to_verify_and_a_pair_needs_it_to_build():
+    # Checking that the private key matches the public key means signing, so
+    # a pair cannot be built without liboqs; a verify-only key still can.
     result = _without_liboqs(
         f"""
         import base64
@@ -237,10 +248,13 @@ def test_a_key_built_from_bytes_needs_liboqs_only_to_sign_or_verify():
 
         public = base64.b64encode(b"\\x00" * 897).decode()
         private = base64.b64encode(b"\\x00" * 1281).decode()
-        pair = KeyPair.from_keys(KeyType.FALCON_512, public, private)
-        assert pair.public_key == public and pair.can_sign
+        pair = KeyPair.from_public(KeyType.FALCON_512, public)
+        assert pair.public_key == public and not pair.can_sign
 
-        for call in (lambda: pair.sign(b"m"), lambda: pair.verify(b"m", b"s")):
+        for call in (
+            lambda: pair.verify(b"m", b"s"),
+            lambda: KeyPair.from_keys(KeyType.FALCON_512, public, private),
+        ):
             try:
                 call()
             except PostQuantumUnavailable as exc:

@@ -95,7 +95,7 @@ def test_trailing_slashes_on_the_base_url_are_stripped(server):
 def test_get_returns_the_body_and_requests_the_path(server):
     _Handler.body = "hello"
 
-    assert Connection(server)._get("/api/x") == "hello"
+    assert Connection(server)._get("/api/x") == (200, "hello")
     assert _Handler.requests[0][:2] == ("GET", "/api/x")
 
 
@@ -141,19 +141,28 @@ def test_a_ledger_rejection_at_http_200_still_reports_its_errors(server):
     assert response.committed is False
 
 
-def test_a_2xx_object_body_is_committed(server):
+def test_a_2xx_object_body_without_a_summary_is_not_committed(server):
     _Handler.status = 201
     _Handler.body = "{}"
+
+    response = Connection(server).submit_raw("{}")
+
+    assert response.committed is False
+    assert response.errors == ["Response has no $summary"]
+
+
+def test_a_2xx_body_with_a_summary_and_no_errors_is_committed(server):
+    _Handler.status = 201
+    _Handler.body = json.dumps({"$summary": {"errors": []}})
 
     assert Connection(server).submit_raw("{}").committed is True
 
 
-def test_get_does_not_swallow_http_errors(server):
-    import urllib.error
-
+def test_get_returns_status_and_body_for_http_errors(server):
     _Handler.status = 503
-    with pytest.raises(urllib.error.HTTPError):
-        Connection(server)._get("/")
+    _Handler.body = "down"
+
+    assert Connection(server)._get("/") == (503, "down")
 
 
 def test_an_unreachable_node_raises_rather_than_returning_a_response():
@@ -245,10 +254,10 @@ def test_null_summary_streams_and_responses_are_treated_as_empty():
         json.dumps({"$summary": None, "$streams": None, "$responses": None})
     )
 
-    assert response.errors == []
+    assert response.errors == ["Response has no $summary"]
     assert response.new_streams == []
     assert response.responses == []
-    assert response.committed is True
+    assert response.committed is False
 
 
 def test_new_streams_skips_entries_without_an_id():

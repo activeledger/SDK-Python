@@ -239,7 +239,14 @@ class Secp256k1KeyPair:
                 f"secp256k1 private key is {len(scalar)} bytes, expected {PRIVATE_KEY_SIZE}"
             )
 
-        pair._signing = SigningKey.from_string(scalar, curve=SECP256k1)
+        signing = SigningKey.from_string(scalar, curve=SECP256k1)
+        # Compare points, not strings: the stored public key may be the
+        # compressed or the uncompressed form of the same point.
+        if signing.verifying_key.to_string("compressed") != pair._verifying.to_string(
+            "compressed"
+        ):
+            raise ValueError("secp256k1 private key does not match the public key")
+        pair._signing = signing
         return pair
 
     # -- accessors --------------------------------------------------------

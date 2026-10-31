@@ -83,7 +83,7 @@ full = Secp256k1KeyPair.generate(compressed=False)   # uncompressed
 key.public_key       # "0x02a1b2..." - give this to the ledger
 key.private_key      # store this
 
-restored = Secp256k1KeyPair.from_keys(key.public_key, key.private_key)
+restored = Secp256k1KeyPair.from_keys(key.public_key, key.private_key)   # ValueError if the keys do not pair
 verifier = Secp256k1KeyPair.from_public_key(key.public_key)
 ```
 
@@ -142,7 +142,7 @@ signature = key.sign(b"some bytes")
 key.verify(b"some bytes", signature)     # True
 
 # Reload later
-same = KeyPair.from_keys(KeyType.FALCON_512, pub_b64, prv_b64)
+same = KeyPair.from_keys(KeyType.FALCON_512, pub_b64, prv_b64)   # ValueError if the keys do not pair
 
 # Verify-only, no private key
 checker = KeyPair.from_public(KeyType.FALCON_512, pub_b64)
@@ -301,7 +301,7 @@ tx = TransactionBuilder().namespace("n").contract("c").input(stream, HsmSigner()
 
 **Always send the key type.** The ledger defaults a missing `type` to `"rsa"` and then attempts RSA verification against a base64 post-quantum blob. This SDK always sends it; if you hand-build an envelope, do the same.
 
-**A rejected transaction is HTTP 200.** Check `response.committed`, never the status code alone. `committed` is also `False`, with an entry in `response.errors`, for a non-2xx status or a body that is not a JSON object.
+**A rejected transaction is HTTP 200.** Check `response.committed`, never the status code alone. `committed` is also `False`, with an entry in `response.errors`, for a non-2xx status, a body that is not a JSON object, or a body with no `$summary` object (every reply the node builds for a transaction has one).
 
 **Errors are unhelpful by design.** A wrong type string, a wrong-length key, or signed bytes differing by one escape all come back as **1220 "Signature Incorrect"** -- never "unknown algorithm" or "bad key length". This SDK validates key lengths and type strings up front so these fail locally with a message naming the problem.
 

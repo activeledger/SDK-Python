@@ -279,6 +279,23 @@ def test_a_wrong_length_private_key_is_refused(ec_vectors):
         Secp256k1KeyPair.from_keys(v["publicKey"], "0x" + "ab" * 31)
 
 
+def test_a_private_key_that_does_not_match_the_public_key_is_refused(ec_vectors):
+    other = Secp256k1KeyPair.generate()
+
+    for v in ec_vectors:
+        with pytest.raises(ValueError, match="does not match"):
+            Secp256k1KeyPair.from_keys(v["publicKey"], other.private_key)
+
+
+def test_a_matching_pair_is_accepted_in_either_public_key_form():
+    key = Secp256k1KeyPair.generate()
+    uncompressed = "0x" + key._verifying.to_string("uncompressed").hex()
+    compressed = "0x" + key._verifying.to_string("compressed").hex()
+
+    for public in (compressed, uncompressed):
+        assert Secp256k1KeyPair.from_keys(public, key.private_key).can_sign
+
+
 def test_malformed_der_is_not_high_s():
     # Not a DER signature at all; the helpers answer rather than raise.
     assert is_high_s(b"") is False

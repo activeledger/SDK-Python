@@ -37,7 +37,9 @@ class LedgerResponse:
         silently does not happen.
 
         A non-2xx status, or a body that is not a JSON object, is also an
-        error: nothing here can show the transaction committed.
+        error: nothing here can show the transaction committed. So is a body
+        with no ``$summary`` -- every reply the node builds for a finished
+        transaction carries one, so its absence means this is not that reply.
         """
         errors: List[str] = []
         if not 200 <= self.status < 300:
@@ -45,7 +47,9 @@ class LedgerResponse:
         if not self._valid:
             errors.append("Response body is not a JSON object")
         summary = self._doc.get("$summary")
-        if summary is not None and not isinstance(summary, dict):
+        if self._valid and summary is None:
+            errors.append("Response has no $summary")
+        elif summary is not None and not isinstance(summary, dict):
             errors.append("Response $summary is not a JSON object")
         elif summary:
             reported = summary.get("errors") or []
@@ -144,7 +148,10 @@ class Connection:
             # committed.
             return exc.code, exc.read().decode("utf-8", errors="replace")
 
-    def _get(self, path: str) -> str:
+    def _get(self, path: str) -> Tuple[int, str]:
         request = urllib.request.Request(self.base_url + path, method="GET")
-        with urllib.request.urlopen(request, timeout=self.timeout) as response:
-            return response.read().decode("utf-8")
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                return response.status, response.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            return exc.code, exc.read().decode("utf-8", errors="replace")

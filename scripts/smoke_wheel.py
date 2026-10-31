@@ -141,7 +141,8 @@ rejected = conn.submit(tx)
 check(not rejected.committed and rejected.errors == ["1220 Signature Incorrect"],
       "rejected HTTP 200 reply is not committed")
 
-replies.append(json.dumps({"$streams": {"new": [{"id": "ident-1"}]}}))
+replies.append(json.dumps({"$summary": {"commit": 1},
+                           "$streams": {"new": [{"id": "ident-1"}]}}))
 identity = conn.onboard(stub, "identity")
 check(identity.stream_id == "ident-1", "onboard returns the new identity")
 replies.append(json.dumps({"$summary": {"errors": ["nope"]}}))

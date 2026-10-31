@@ -218,7 +218,7 @@ def test_a_node_that_never_answers_times_out_rather_than_hanging():
 
 def test_onboard_returns_an_identity_bound_to_the_new_stream(server):
     key = Secp256k1KeyPair.generate()
-    _Handler.body = json.dumps({"$streams": {"new": [{"id": "stream-abc"}]}})
+    _Handler.body = json.dumps({"$summary": {"commit": 1}, "$streams": {"new": [{"id": "stream-abc"}]}})
 
     identity = Connection(server).onboard(key, label="me")
 
@@ -229,7 +229,7 @@ def test_onboard_returns_an_identity_bound_to_the_new_stream(server):
 
 def test_onboard_sends_a_self_signed_transaction_keyed_by_label(server):
     key = Secp256k1KeyPair.generate()
-    _Handler.body = json.dumps({"$streams": {"new": [{"id": "s"}]}})
+    _Handler.body = json.dumps({"$summary": {"commit": 1}, "$streams": {"new": [{"id": "s"}]}})
 
     Connection(server).onboard(key, label="me")
 
@@ -244,13 +244,40 @@ def test_onboard_signature_verifies_against_the_body_that_was_sent(server):
     import base64
 
     key = Secp256k1KeyPair.generate()
-    _Handler.body = json.dumps({"$streams": {"new": [{"id": "s"}]}})
+    _Handler.body = json.dumps({"$summary": {"commit": 1}, "$streams": {"new": [{"id": "s"}]}})
 
     Connection(server).onboard(key)
 
     sent = json.loads(_Handler.requests[0][3])
     signature = base64.b64decode(sent["$sigs"]["identity"])
     assert key.verify(canonical_bytes(sent["$tx"]), signature)
+
+
+@pytest.mark.parametrize(
+    "status, body, reason",
+    [
+        (500, {"$streams": {"new": [{"id": "s"}]}}, "HTTP 500"),
+        (200, {"$summary": {"errors": ["nope"]}, "$streams": {"new": [{"id": "s"}]}}, "nope"),
+        (200, {"$streams": {"new": [{"id": "s"}]}}, "no $summary"),
+    ],
+)
+def test_onboard_raises_when_the_reply_is_not_committed_even_with_a_stream(
+    server, status, body, reason
+):
+    _Handler.status = status
+    _Handler.body = json.dumps(body)
+
+    with pytest.raises(RuntimeError, match='Onboarding "me" was not committed') as info:
+        Connection(server).onboard(Secp256k1KeyPair.generate(), label="me")
+
+    assert reason in str(info.value)
+
+
+def test_onboard_raises_when_committed_but_no_stream_was_created(server):
+    _Handler.body = json.dumps({"$summary": {"commit": 1}})
+
+    with pytest.raises(RuntimeError, match='Onboarding "identity" created no stream'):
+        Connection(server).onboard(Secp256k1KeyPair.generate())
 
 
 # -- LedgerResponse parsing --------------------------------------------------------
@@ -345,7 +372,9 @@ def test_the_entry_point_passes_url_and_timeout_to_its_parts():
 def test_the_entry_point_submit_and_onboard_go_through_the_connection(server):
     ledger = Activeledger(server)
     key = Secp256k1KeyPair.generate()
-    _Handler.body = json.dumps({"$streams": {"new": [{"id": "sid"}]}})
+    _Handler.body = json.dumps(
+        {"$summary": {"commit": 1}, "$streams": {"new": [{"id": "sid"}]}}
+    )
 
     assert ledger.onboard(key).stream_id == "sid"
     response = ledger.submit(onboard_transaction(key))
@@ -376,11 +405,7 @@ def test_an_unknown_package_attribute_raises_attribute_error():
 
 # An onboarding the ledger did not commit must not produce an Identity, whatever
 # else the body carries: an identity that was never created surfaces three calls
-# later. Go's Client.Onboard refuses these; the Python Connection does not.
-@pytest.mark.xfail(
-    strict=True,
-    reason="Connection.onboard checks new_streams but not committed",
-)
+# later. Go's Client.Onboard refuses these, and so does the Python Connection.
 @pytest.mark.parametrize(
     "status, body",
     [

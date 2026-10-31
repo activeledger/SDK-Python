@@ -89,7 +89,7 @@ def test_onboard_raises_when_no_stream_was_created(server):
         def sign(self, m):
             return b"S"
 
-    with pytest.raises(RuntimeError, match="Onboard failed"):
+    with pytest.raises(RuntimeError, match="was not committed: nope"):
         Connection(server).onboard(Stub())
 
 

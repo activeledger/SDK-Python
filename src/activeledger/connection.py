@@ -120,13 +120,17 @@ class Connection:
     def onboard(self, signer: Signer, label: str = "identity") -> Identity:
         """Onboard a new identity and return it.
 
-        Raises if the ledger rejected it, rather than returning an Identity
+        Raises unless the transaction committed and created a stream, rather than returning an Identity
         with an empty stream id -- an onboarding that silently produced no
         identity is a failure that surfaces three calls later.
         """
         response = self.submit(onboard_transaction(signer, label))
+        if not response.committed:
+            raise RuntimeError(
+                f'Onboarding "{label}" was not committed: {"; ".join(map(str, response.errors))}'
+            )
         if not response.new_streams:
-            raise RuntimeError(f"Onboard failed: {response.raw}")
+            raise RuntimeError(f'Onboarding "{label}" created no stream: {response.raw}')
         return Identity(response.new_streams[0], signer)
 
     # -- internals -------------------------------------------------------

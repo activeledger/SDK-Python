@@ -9,6 +9,8 @@
 
 # Activeledger SDK for Python
 
+**Documentation:** [SDK guide](https://activeledger.github.io/activeledger/sdks/python/) | [All SDKs](https://activeledger.github.io/activeledger/sdks/) | [Activeledger guide](https://activeledger.github.io/activeledger/)
+
 Python SDK for [Activeledger](https://github.com/activeledger/activeledger), with post-quantum identity support.
 
 **Requires Activeledger 4.7.0+** for `ml-dsa-65` and `falcon-512`. Python 3.9+.

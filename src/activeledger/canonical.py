@@ -27,6 +27,7 @@ reference implementation's bytes exactly.
 from __future__ import annotations
 
 import json
+from json.encoder import encode_basestring
 from typing import Any
 
 __all__ = ["canonical_json", "canonical_bytes", "js_number"]
@@ -99,8 +100,10 @@ def _encode(value: Any) -> str:
     the test passes whether or not the override is honoured. ``1e-7`` is the
     case that tells the truth.)
 
-    Strings still go through ``json.dumps``, so their escaping stays exactly
-    what it was and keeps matching the published vectors.
+    Strings go through ``json.encoder.encode_basestring`` -- the very function
+    ``json.dumps(..., ensure_ascii=False)`` calls, minus the ``JSONEncoder`` that
+    ``dumps`` builds on every call -- so their escaping stays exactly what it
+    was and keeps matching the published vectors.
 
     ``bool`` is checked before ``int`` and that is not tidiness: ``bool`` is a
     subclass of ``int`` in Python, so the obvious ordering turns ``True`` into
@@ -123,11 +126,11 @@ def _encode(value: Any) -> str:
         # signing the unrounded value gives a signature it cannot verify.
         return js_number(number)
     if isinstance(value, str):
-        return json.dumps(value, ensure_ascii=False)
+        return encode_basestring(value)
     if isinstance(value, dict):
         # Key order is the caller's, deliberately. The ledger does not
         # canonicalise it, so the signer must reproduce what was built.
-        items = (json.dumps(str(key), ensure_ascii=False) + ":" + _encode(item)
+        items = (encode_basestring(str(key)) + ":" + _encode(item)
                  for key, item in value.items())
         return "{" + ",".join(items) + "}"
     if isinstance(value, (list, tuple)):

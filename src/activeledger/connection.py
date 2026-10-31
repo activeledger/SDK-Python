@@ -120,13 +120,17 @@ class Connection:
     def onboard(self, signer: Signer, label: str = "identity") -> Identity:
         """Onboard a new identity and return it.
 
-        Raises if the ledger rejected it, rather than returning an Identity
+        Raises unless the transaction committed and created a stream, rather than returning an Identity
         with an empty stream id -- an onboarding that silently produced no
         identity is a failure that surfaces three calls later.
         """
         response = self.submit(onboard_transaction(signer, label))
+        if not response.committed:
+            raise RuntimeError(
+                f'Onboarding "{label}" was not committed: {"; ".join(map(str, response.errors))}'
+            )
         if not response.new_streams:
-            raise RuntimeError(f"Onboard failed: {response.raw}")
+            raise RuntimeError(f'Onboarding "{label}" created no stream: {response.raw}')
         return Identity(response.new_streams[0], signer)
 
     # -- internals -------------------------------------------------------
@@ -140,7 +144,13 @@ class Connection:
         )
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                return response.status, response.read().decode("utf-8")
+                data = response.read()
+                try:
+                    return response.status, data.decode("utf-8")
+                except UnicodeDecodeError:
+                    # Not text we can trust: an empty body reads as "not a
+                    # JSON object", so the reply cannot look committed.
+                    return response.status, ""
         except urllib.error.HTTPError as exc:
             # A ledger rejection is a 200 with errors in the body, so an
             # HTTPError is a transport or routing problem. The body is kept,

@@ -38,6 +38,7 @@ dev = ["pytest>=7.0"]
 
 [project.urls]
 Homepage = "https://github.com/activeledger/SDK-Python"
+Documentation = "https://activeledger.github.io/activeledger/sdks/python/"
 Ledger = "https://github.com/activeledger/activeledger"
 
 [tool.setuptools.packages.find]

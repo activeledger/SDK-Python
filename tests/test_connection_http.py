@@ -202,8 +202,9 @@ def test_a_reply_cut_off_mid_body_raises_rather_than_returning_a_response():
         b'{"$summary":'
     )
     # A partial body would parse as nothing and read as "not committed"; the
-    # dropped connection is the real story.
-    with pytest.raises(http.client.IncompleteRead):
+    # dropped connection is the real story. Depending on timing the client sees
+    # the short body or the reset that follows it.
+    with pytest.raises((http.client.IncompleteRead, ConnectionResetError)):
         Connection(url, timeout=2).submit_raw("{}")
 
 

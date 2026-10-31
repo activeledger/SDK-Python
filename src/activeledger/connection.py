@@ -144,7 +144,13 @@ class Connection:
         )
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                return response.status, response.read().decode("utf-8")
+                data = response.read()
+                try:
+                    return response.status, data.decode("utf-8")
+                except UnicodeDecodeError:
+                    # Not text we can trust: an empty body reads as "not a
+                    # JSON object", so the reply cannot look committed.
+                    return response.status, ""
         except urllib.error.HTTPError as exc:
             # A ledger rejection is a 200 with errors in the body, so an
             # HTTPError is a transport or routing problem. The body is kept,

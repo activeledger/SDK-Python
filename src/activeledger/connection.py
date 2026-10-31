@@ -162,6 +162,10 @@ class Connection:
         request = urllib.request.Request(self.base_url + path, method="GET")
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                return response.status, response.read().decode("utf-8")
+                try:
+                    return response.status, response.read().decode("utf-8")
+                except UnicodeDecodeError:
+                    # As in _post: an empty body cannot look committed.
+                    return response.status, ""
         except urllib.error.HTTPError as exc:
             return exc.code, exc.read().decode("utf-8", errors="replace")

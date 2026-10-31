@@ -221,6 +221,16 @@ def test_a_2xx_body_that_is_not_utf8_is_not_committed_rather_than_an_exception()
     assert response.errors == ["Response body is not a JSON object"]
 
 
+def test_a_get_2xx_body_that_is_not_utf8_returns_an_empty_body_rather_than_an_exception():
+    body = b'{"x": "\xff\xfe"}'
+    url = _one_shot_server(
+        b"HTTP/1.1 200 OK\r\nContent-Length: %d\r\nConnection: close\r\n\r\n" % len(body)
+        + body
+    )
+
+    assert Connection(url, timeout=2)._get("/") == (200, "")
+
+
 def test_a_node_that_never_answers_times_out_rather_than_hanging():
     url = _one_shot_server(b"", hold=2.0)
     with pytest.raises(OSError):

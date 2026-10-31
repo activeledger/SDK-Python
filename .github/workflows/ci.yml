@@ -48,3 +48,16 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libssl-dev
       - run: pip install -e '.[pq,ec,dev]'
       - run: pytest tests/ --ignore=tests/integration -q
+
+  wheel-smoke:
+    # Builds the wheel and installs it into a fresh venv, so a packaging
+    # mistake (a missing data file such as the word list) fails here rather
+    # than after release. scripts/smoke_wheel.py was not run anywhere.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install setuptools wheel
+      - run: python scripts/smoke_wheel.py

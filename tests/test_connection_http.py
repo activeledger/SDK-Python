@@ -173,6 +173,47 @@ def test_an_unreachable_node_raises_rather_than_returning_a_response():
         Connection("http://127.0.0.1:1", timeout=2).submit_raw("{}")
 
 
+def _one_shot_server(reply, hold=0.0):
+    """A raw socket that answers one request with ``reply`` bytes, as sent."""
+    import socket
+    import time
+
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(1)
+
+    def serve():
+        conn, _ = listener.accept()
+        conn.recv(65536)
+        conn.sendall(reply)
+        time.sleep(hold)
+        conn.close()
+        listener.close()
+
+    threading.Thread(target=serve, daemon=True).start()
+    return f"http://127.0.0.1:{listener.getsockname()[1]}"
+
+
+def test_a_reply_cut_off_mid_body_raises_rather_than_returning_a_response():
+    import http.client
+
+    url = _one_shot_server(
+        b"HTTP/1.1 200 OK\r\nContent-Length: 1000\r\nConnection: close\r\n\r\n"
+        b'{"$summary":'
+    )
+    # A partial body would parse as nothing and read as "not committed"; the
+    # dropped connection is the real story. Depending on timing the client sees
+    # the short body or the reset that follows it.
+    with pytest.raises((http.client.IncompleteRead, ConnectionResetError)):
+        Connection(url, timeout=2).submit_raw("{}")
+
+
+def test_a_node_that_never_answers_times_out_rather_than_hanging():
+    url = _one_shot_server(b"", hold=2.0)
+    with pytest.raises(OSError):
+        Connection(url, timeout=0.2).submit_raw("{}")
+
+
 # -- onboarding ------------------------------------------------------------------
 
 def test_onboard_returns_an_identity_bound_to_the_new_stream(server):
@@ -331,3 +372,26 @@ def test_secp256k1_key_pair_is_exposed_lazily_from_the_ec_module():
 def test_an_unknown_package_attribute_raises_attribute_error():
     with pytest.raises(AttributeError, match="no attribute 'Nonsense'"):
         activeledger.Nonsense  # noqa: B018
+
+
+# An onboarding the ledger did not commit must not produce an Identity, whatever
+# else the body carries: an identity that was never created surfaces three calls
+# later. Go's Client.Onboard refuses these; the Python Connection does not.
+@pytest.mark.xfail(
+    strict=True,
+    reason="Connection.onboard checks new_streams but not committed",
+)
+@pytest.mark.parametrize(
+    "status, body",
+    [
+        (500, {"$summary": {"errors": ["boom"]}, "$streams": {"new": [{"id": "s"}]}}),
+        (200, {"$summary": {"errors": ["1220 Signature Incorrect"]},
+               "$streams": {"new": [{"id": "s"}]}}),
+    ],
+)
+def test_onboard_raises_when_the_ledger_did_not_commit(server, status, body):
+    _Handler.status = status
+    _Handler.body = json.dumps(body)
+
+    with pytest.raises(RuntimeError):
+        Connection(server).onboard(Secp256k1KeyPair.generate())

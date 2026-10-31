@@ -106,6 +106,14 @@ class KeyPair:
         self._key_type = key_type
         self._public = public_bytes
         self._private = private_bytes
+        if private_bytes is not None:
+            # liboqs cannot derive a public key from a secret key, so prove
+            # the pair by signing and verifying a fixed message.
+            probe = b"activeledger key pair check"
+            if not self.verify(probe, self.sign(probe)):
+                raise ValueError(
+                    f"{key_type.value} private key does not match the public key"
+                )
 
     # -- construction ----------------------------------------------------
 

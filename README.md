@@ -301,7 +301,7 @@ tx = TransactionBuilder().namespace("n").contract("c").input(stream, HsmSigner()
 
 **Always send the key type.** The ledger defaults a missing `type` to `"rsa"` and then attempts RSA verification against a base64 post-quantum blob. This SDK always sends it; if you hand-build an envelope, do the same.
 
-**A rejected transaction is HTTP 200.** Check `response.committed`, never the status code.
+**A rejected transaction is HTTP 200.** Check `response.committed`, never the status code alone. `committed` is also `False`, with an entry in `response.errors`, for a non-2xx status or a body that is not a JSON object.
 
 **Errors are unhelpful by design.** A wrong type string, a wrong-length key, or signed bytes differing by one escape all come back as **1220 "Signature Incorrect"** -- never "unknown algorithm" or "bad key length". This SDK validates key lengths and type strings up front so these fail locally with a message naming the problem.
 

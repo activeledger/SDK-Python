@@ -80,3 +80,17 @@ def test_using_a_secp256k1_key_names_the_extra():
     )
     assert result.returncode == 0, result.stderr
     assert "activeledger[ec]" in result.stdout
+
+
+def test_is_high_s_base64_names_the_extra():
+    result = run_without_ecdsa(
+        """
+        from activeledger.ec import is_high_s_base64
+        try:
+            is_high_s_base64("AAAA")
+        except ImportError as error:
+            print("MESSAGE:", error)
+        """
+    )
+    assert result.returncode == 0, result.stderr
+    assert "activeledger[ec]" in result.stdout

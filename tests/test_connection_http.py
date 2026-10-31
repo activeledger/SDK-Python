@@ -106,7 +106,7 @@ def test_an_http_error_surfaces_the_body_not_an_exception(server):
 
     response = Connection(server).submit_raw("{}")
 
-    assert response.errors == ["node exploded"]
+    assert response.errors == ["HTTP 500", "node exploded"]
     assert response.committed is False
 
 
@@ -117,7 +117,35 @@ def test_a_non_json_error_page_is_kept_raw(server):
     response = Connection(server).submit_raw("{}")
 
     assert response.raw == "<html>Not Found</html>"
-    assert response.errors == []
+    assert response.errors == ["HTTP 404", "Response body is not a JSON object"]
+    assert response.committed is False
+
+
+@pytest.mark.parametrize("body", ["", "<html>Bad Gateway</html>", "{}"])
+def test_a_5xx_never_looks_committed(server, body):
+    _Handler.status = 502
+    _Handler.body = body
+
+    response = Connection(server).submit_raw("{}")
+
+    assert response.committed is False
+    assert response.errors[0] == "HTTP 502"
+
+
+def test_a_ledger_rejection_at_http_200_still_reports_its_errors(server):
+    _Handler.body = json.dumps({"$summary": {"errors": ["1220"]}})
+
+    response = Connection(server).submit_raw("{}")
+
+    assert response.errors == ["1220"]
+    assert response.committed is False
+
+
+def test_a_2xx_object_body_is_committed(server):
+    _Handler.status = 201
+    _Handler.body = "{}"
+
+    assert Connection(server).submit_raw("{}").committed is True
 
 
 def test_get_does_not_swallow_http_errors(server):
@@ -180,7 +208,36 @@ def test_onboard_signature_verifies_against_the_body_that_was_sent(server):
 def test_an_empty_body_is_an_uncommitted_nothing():
     response = LedgerResponse("")
 
-    assert response.errors == [] and response.new_streams == [] and response.responses == []
+    assert response.errors == ["Response body is not a JSON object"]
+    assert response.committed is False
+    assert response.new_streams == [] and response.responses == []
+
+
+@pytest.mark.parametrize("raw", ["null", "[]", "[1, 2]", '"text"', "42", "true"])
+def test_valid_json_that_is_not_an_object_is_not_committed(raw):
+    response = LedgerResponse(raw)
+
+    assert response.errors == ["Response body is not a JSON object"]
+    assert response.committed is False
+    assert response.new_streams == [] and response.responses == []
+    repr(response)
+
+
+@pytest.mark.parametrize("summary", ["text", [], ["x"], 7, True])
+def test_a_non_object_summary_is_an_error_not_an_exception(summary):
+    response = LedgerResponse(json.dumps({"$summary": summary}))
+
+    assert response.errors == ["Response $summary is not a JSON object"]
+    assert response.committed is False
+
+
+@pytest.mark.parametrize("streams", ["text", [], ["x"], 7, {"new": "abc"}, {"new": [1, None, "x"]}])
+def test_a_non_object_streams_yields_no_new_streams(streams):
+    assert LedgerResponse(json.dumps({"$streams": streams})).new_streams == []
+
+
+def test_a_non_list_responses_is_empty():
+    assert LedgerResponse(json.dumps({"$responses": "text"})).responses == []
 
 
 def test_null_summary_streams_and_responses_are_treated_as_empty():

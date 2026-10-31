@@ -96,7 +96,8 @@ def test_onboard_raises_when_no_stream_was_created(server):
 def test_malformed_response_body_does_not_explode(server):
     _Handler.post_body = "not json at all"
     response = Connection(server).submit_raw("{}")
-    assert response.errors == [] and response.raw == "not json at all"
+    assert response.committed is False and response.raw == "not json at all"
+    assert response.errors == ["Response body is not a JSON object"]
 
 
 # -- SSE ---------------------------------------------------------------
